@@ -1,0 +1,154 @@
+<template>
+  <Tips/>
+  <view class="container">
+
+    <view class="detail-box">
+      <view class="weui-cells weui-cells_after-title weui-cells-merge-top">
+        <view class="weui-cell" @tap="admissibility">
+          <view class="weui-cell__hd">
+            <view class="weui-label"><image class="icon mr10" src="/images/icons/package.png"/><text class="primary xl">手机号</text></view>
+          </view>
+          <view class="weui-cell__bd">
+            <text class="xl">{{userInfo.phone}}</text>
+          </view>
+          <view class="weui-cell__ft weui-cell__ft_in-access"></view>
+        </view>
+      </view>
+    </view>
+    <view class="detail-box"  >
+      <view class="weui-cells weui-cells_after-title weui-cells-merge-top">
+        <view class="weui-cell">
+          <view class="weui-cell__hd" >
+            <view class="weui-label">
+              <text class="primary xl" >普通认证</text>
+            </view>
+          </view>
+        </view>
+      </view>  
+    </view>
+    <view class="detail-box">
+      <view class="weui-cells weui-cells_after-title weui-cells-merge-top">
+        <view class="weui-cell" @tap="realNameAuth">
+          <view class="weui-cell__hd">
+            <view class="weui-label"><image class="icon mr10" src="/images/icons/package.png"/><text class="primary xl">实名认证</text></view>
+          </view>
+          <view class="weui-cell__bd" >
+            <text class="xl">立即认证</text>
+          </view>
+          <view class="weui-cell__ft weui-cell__ft_in-access"></view>
+        </view>
+      </view>
+    </view>
+
+  </view>
+
+
+</template>
+
+<script>
+  import wepy from 'wepy';
+  import auth from '../../api/auth';
+  import base from '../../mixins/base';
+  import input from '../../mixins/input';
+  import Tips from '../../utils/Tips';
+  import Event from '../../utils/Event';
+  import FormTips from '../../components/weui/tips';
+ 
+  export default class AuthCategory extends wepy.page {
+    def = {
+      userInfo:{
+      },
+      status:0,
+      init: false,
+      display:false
+    };
+    data = {...this.def};
+    async onLoad () {
+      try {
+        const loginCode = auth.getConfig('login_code');
+        if (loginCode != null) {
+          this.loginCode=loginCode;
+          const userInfo = await auth.userInfo(loginCode);
+          this.userInfo=userInfo;
+          this.userInfo.phone=userInfo.phone;
+          if (userInfo!= null) {
+            this.userInfo.phone=userInfo.phone;
+            this.status=userInfo.status;
+          }
+        }
+      } catch (e) {
+      } finally {
+        this.loaded();
+      }
+    };
+    methods = {
+      // 跳转到受理页面
+      admissibility() {
+        const param = {
+          title: "受理条件",
+          content: this.input.admissibility
+        };
+        this.$navigate('commonDetail', param);
+      },
+      //跳转到依据页面
+      realNameAuth() {
+        console.info("this.status:",this.status);
+        if(this.status==4){
+          this.$switch('index');
+        }else{
+          if(this.status==3){
+            this.$navigate('idCardAuth');                      
+          }
+        }
+      },
+      //跳转到收费标准页面
+/*      feeScale() {
+        const param = {
+          title: "收费标准",
+          content: this.input.feeScale
+        };
+        this.$navigate('commonDetail', param);
+      }
+*/
+    };
+
+    navigate(standard){
+      var title,content;
+
+      if(standard.indexOf("ss:")==0){
+        title="受理标准";
+        content=standard.substring(3);
+        console.info("content",content);
+      }
+      if(standard.indexOf("rr:")==0){
+        title="材料要求";
+        content=standard.substring(3);
+        console.info("content",content);
+      }
+      const param = {
+        title: title,
+        content:content
+      };
+      this.$navigate('commonDetail', param);
+    }
+
+    components = {
+//      ZanTab: ZanTab,
+      Tips: FormTips,
+//      ActionBar: ActionBar,
+//      FlowList: FlowList,
+//      MaterialList: MaterialList,
+//      ImageUploader: ImageUploader,
+//      SliderPanel: SliderPanel,
+//      ActionPanel: ActionPanel
+    };
+    mixins = [base, input];
+    config = {
+      navigationBarTitleText: '个人资料'
+    };
+  }
+</script>
+<style lang="scss">
+  @import "../../styles/variable";
+
+</style>

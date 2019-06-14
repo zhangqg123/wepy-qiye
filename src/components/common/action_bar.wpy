@@ -1,0 +1,101 @@
+<template>
+  <view class="action-bar-placeholder"></view>
+  <view class="action-bar row-center fixed-bottom" wx:if="{{noCancel == 1}}">
+    <form bindsubmit="optAsk" report-submit='true' class="action">
+      <button form-type="submit" class="but-action {{okType}}-acton row-center">
+        <text>{{create}}</text>
+      </button>
+    </form>  
+  </view>
+  <view class="action-bar row-center fixed-bottom" wx:else>
+    <form bindsubmit="optAsk" report-submit='true' class="action">
+      <button form-type="submit" class="but-action {{okType}}-acton row-center">
+        <text>{{create}}</text>
+      </button>
+    </form>  
+    <form bindsubmit="back" report-submit='true' class="action">
+      <button form-type="submit" class="but-action secondary-action row-center">
+        <text>{{cancelText}}</text>
+      </button>
+    </form>  
+  </view>
+
+</template>
+
+<script>
+  import wepy from 'wepy'
+  export default class ActionBar extends wepy.component {
+    props = {
+      address: {},
+      okType: {
+        default: 'primary'
+      },
+      create: {
+        default: '确定'
+      },
+      cancelText: {
+        default: '取消'
+      },
+      noCancel: {
+        default: 0
+      }
+    };
+    methods = {
+      optAsk(e) {
+        var formId=e.detail.formId;
+        this.$emit('optAsk',{formId:formId,mode:'create'});
+      },
+      back(e) {
+        var formId=e.detail.formId;
+        this.$emit('back',{formId:formId});
+      }
+    }
+  }
+</script>
+
+<style lang="scss">
+  @import "../../styles/variable";
+.my-plain-btn{
+  border:none;
+  width:375rpx;
+  height:100rpx;
+  padding:0;
+  vertical-align:middle;
+}
+  .action-bar-placeholder{
+    height: 120rpx;
+    width: 100%;
+    background-color: $color-bg-body;
+  }
+
+  .action-bar{
+    width: 100%;
+    height: 100rpx;
+    z-index: 100;
+
+    .action{
+      height: 100%;
+      width: 50%;
+//      text{font-size: $text-xl;}
+    }
+    .but-action{
+      height: 100%;
+      width: 100%;
+      text{font-size: $text-xl;}
+    }
+
+    .primary-acton{
+      background-color: $color-primary;
+      text{color: #FFF;}
+    }
+    .danger-acton{
+      background-color: $color-danger;
+      text{color: #FFF;}
+    }
+
+    .secondary-action{
+      background-color: #FFF;
+      border-top: $border;
+    }
+  }
+</style>

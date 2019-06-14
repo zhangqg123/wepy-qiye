@@ -1,0 +1,243 @@
+<template>
+  <Tips/>
+  <view class="container">
+    <view>
+
+      <view class="detail-box">
+        <view class="weui-cells weui-cells_after-title weui-cells-merge-top">
+          <view class="weui-cell" wx:if="{{status == 4}}">
+            <view class="weui-cell__hd">
+              <view class="weui-label"><image class="icon mr10" src="/images/icons/package.png"/><text class="primary xl">用户名</text></view>
+            </view>
+            <view class="weui-cell__bd">
+              <text class="xl">{{userInfo.realname}}</text>
+            </view>
+            <view class="weui-cell__ft weui-cell__ft_in-access"></view>
+          </view>
+          <view class="weui-cell" wx:if="{{status == 4}}">
+            <view class="weui-cell__hd">
+              <view class="weui-label"><image class="icon mr10" src="/images/icons/package.png"/><text class="primary xl">身份证号</text></view>
+            </view>
+            <view class="weui-cell__bd">
+              <text class="xl">{{userInfo.idcard}}</text>
+            </view>
+            <view class="weui-cell__ft weui-cell__ft_in-access"></view>
+          </view>
+          <view class="weui-cell">
+            <view class="weui-cell__hd">
+              <view class="weui-label"><image class="icon mr10" src="/images/icons/package.png"/><text class="primary xl">手机号</text></view>
+            </view>
+            <view class="weui-cell__bd">
+              <text class="xl">{{userInfo.phone}}</text>
+            </view>
+            <view class="weui-cell__ft weui-cell__ft_in-access"></view>
+          </view>
+          <view class="weui-cell" @tap="register">
+            <view class="weui-cell__hd">
+              <view class="weui-label"><image class="icon mr10" src="/images/icons/package.png"/><text class="primary xl">用户等级</text></view>
+            </view>
+            <view class="weui-cell__bd" wx:if="{{status < 2}}">
+              <text class="xl">未验证</text>
+            </view>
+            <view class="weui-cell__bd" wx:if="{{status == 2}}">
+              <text class="xl">短信验证</text>
+            </view>
+            <view class="weui-cell__bd" wx:if="{{status == 3}}">
+              <text class="xl">普通用户</text>
+            </view>
+            <view class="weui-cell__bd" wx:if="{{status == 4}}">
+              <text class="xl">实名用户</text>
+            </view>
+            <view class="weui-cell__ft weui-cell__ft_in-access"></view>
+          </view>
+          <view class="weui-cell" @tap="showInner">
+            <view class="weui-cell__hd">
+              <view class="weui-label"><image class="icon mr10" src="/images/icons/package.png"/><text class="primary xl">班级</text></view>
+            </view>
+            <view class="weui-cell__bd">{{input.deptName ? input.deptName : '请选择班级'}}
+            </view>
+            <view class="weui-cell__ft weui-cell__ft_in-access"></view>
+          </view>
+          <view class="weui-cell row-center"  @tap="logout"> 
+            <view class="weui-cell__hd">
+              <view class="weui-label row-center"><text class="xl">注销</text><image class="icon mr20" src="/images/icons/status-8.png"/></view>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+  </view>
+
+  <!-- 分类 -->
+  <SliderPanel :display.sync="isInnerDisplay" btn='false'>
+    <view slot="title">班级</view>
+    <view slot="content" class="weui-cells-form">
+      <radio-group id="deptName" key="" bindchange="radioChange" @tap="selectInner">
+        <label class="weui-cell weui-check__label" wx:for="{{innerDept}}" wx:key="value">
+          <radio class="weui-check" value="{{item.deptName}}" checked="{{input.deptName == item.deptName}}"/>
+          <view class="weui-cell__bd">{{item.deptName}}</view>
+          <view class="weui-cell__ft weui-cell__ft_in-radio" wx:if="{{input.deptName == item.deptName}}">
+            <icon class="weui-icon-radio" type="success_no_circle" size="16"></icon>
+          </view>
+        </label>
+      </radio-group>
+    </view>
+  </SliderPanel>
+
+</template>
+
+<script>
+  import wepy from 'wepy';
+  import auth from '../../api/auth';
+  import base from '../../mixins/base';
+  import input from '../../mixins/input';
+  import Cache from '../../utils/Cache';
+  import Tips from '../../utils/Tips';
+  import Event from '../../utils/Event';
+  import FormTips from '../../components/weui/tips';
+  import SliderPanel from '../../components/common/slider_panel';
+ 
+  export default class UserStatus extends wepy.page {
+    def = {
+      userInfo:{
+      },
+      isInnerDisplay: 'false',
+      innerDept: [],
+      input:{},
+      status:0,
+      init: false,
+      display:false
+    };
+    data = {...this.def};
+    async onLoad () {
+      try {
+        const loginCode = auth.getConfig('login_code');
+        if (loginCode != null) {
+          this.loginCode=loginCode;
+          const userInfo = await auth.userInfo(loginCode);
+          console.info("userInfo",userInfo);
+          this.userInfo=userInfo;
+          this.userInfo.phone=userInfo.phone;
+          if (userInfo!= null) {
+            this.userInfo.phone=userInfo.phone;
+            this.status=userInfo.status;
+            this.innerDept = await Cache.dept();
+
+            this.input.deptName = this.innerDept.find(item => item.id == this.userInfo.deptid).deptName;
+          }
+        }
+      } catch (e) {
+      } finally {
+        this.loaded();
+      }
+    };
+    methods = {
+      async radioChange(e) {
+
+        var deptid = this.innerDept.find(item => item.deptName == e.detail.value).id;
+        console.info("deptid",deptid);
+        
+        try{
+          const loginCode = auth.getConfig('login_code');
+          if (loginCode != null) {
+            var data=await auth.changeDept(deptid);
+            if(data.success==true){
+              this.input.deptName=e.detail.value;
+            }
+          }
+        } catch (e) {
+          this.tips(e.message);
+        } finally {
+          this.loaded();
+        }
+
+      },
+      // 选择分类
+      selectInner() {
+        this.isInnerDisplay = 'false';
+      },
+      // 展现分类
+      showInner() {
+        this.isInnerDisplay = 'true';
+      },
+      // 跳转到受理页面
+      admissibility() {
+        const param = {
+          title: "受理条件",
+          content: this.input.admissibility
+        };
+        this.$navigate('commonDetail', param);
+      },
+      //跳转到依据页面
+      register() {
+        if(this.status==4){
+          this.$switch('/pages/home/myproject');
+        }else{
+          if(this.status<3){
+            this.$navigate('register');          
+          }else{
+            this.$navigate('realAuth');          
+          }
+        }
+      },
+      async logout () {
+        await Tips.confirm('是否确认退出登录？');
+        await auth.removeConfig('login_code');
+        await auth.removeConfig('token');
+        await auth.removeConfig('role_code');
+        await auth.removeConfig('status');
+        this.$switch('../home/myproject');
+        Event.emit(Event.USER_LOGOUT);
+      },
+      //跳转到收费标准页面
+/*      feeScale() {
+        const param = {
+          title: "收费标准",
+          content: this.input.feeScale
+        };
+        this.$navigate('commonDetail', param);
+      }
+*/
+    };
+
+    navigate(standard){
+      var title,content;
+
+      if(standard.indexOf("ss:")==0){
+        title="受理标准";
+        content=standard.substring(3);
+        console.info("content",content);
+      }
+      if(standard.indexOf("rr:")==0){
+        title="材料要求";
+        content=standard.substring(3);
+        console.info("content",content);
+      }
+      const param = {
+        title: title,
+        content:content
+      };
+      this.$navigate('commonDetail', param);
+    }
+
+    components = {
+//      ZanTab: ZanTab,
+      Tips: FormTips,
+//      ActionBar: ActionBar,
+//      FlowList: FlowList,
+//      MaterialList: MaterialList,
+//      ImageUploader: ImageUploader,
+      SliderPanel: SliderPanel,
+//      ActionPanel: ActionPanel
+    };
+    mixins = [base, input];
+    config = {
+      navigationBarTitleText: '个人资料'
+    };
+  }
+</script>
+<style lang="scss">
+  @import "../../styles/variable";
+
+</style>

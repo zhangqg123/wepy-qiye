@@ -1,0 +1,393 @@
+<template>
+  <Tips />
+  <view class="page" wx:if="{{init}}">
+    <!--短信验证-->
+    <view wx:if="{{status < 2}}">
+      <form @submit="smsCodeLogin">
+        <view class="page__bd form">
+          <view class="weui-cells weui-cells_after-title">
+            <view class="weui-cell weui-cell_input weui-cell_vcode">
+              <view class="weui-cell__hd">
+                <view class="weui-label">手机号</view>
+              </view>
+              <view class="weui-cell__bd">
+                <input class="weui-input" id="phone" @input="input" type="number" maxlength="11" placeholder="请输入手机号"/>
+              </view>
+              <view class="weui-cell__ft">
+                <VCode @tap.user="smsCode"/>
+              </view>
+            </view>
+            <view class="weui-cell weui-cell_input weui-cell_vcode">
+              <view class="weui-cell__hd">
+                <view class="weui-label">验证码</view>
+              </view>
+              <view class="weui-cell__bd">
+                <input class="weui-input" type="number" name="code" maxlength="6" placeholder="请输入验证码"/>
+              </view>
+            </view>
+          </view>
+
+          <view class="weui-btn-area">
+            <button class="weui-btn" type="primary" form-type="submit">下一步</button>
+          </view>
+        </view>
+      </form>
+    </view>  
+
+    <!--用户名密码-->
+    <view wx:if="{{status==2}}">
+      <form @submit="userRegister">
+        <view class="page__bd form">
+    <!--      <view class="weui-cell" @tap="showInner">
+            <view class="weui-cell__hd">
+              <view class="weui-label">选择班级</view>
+            </view>
+            <view class="weui-cell__bd">
+              {{input.deptName ? input.deptName : '请选择班级'}}
+            </view>
+            <view class="weui-cell__ft weui-cell__ft_in-access"></view>
+          </view> -->
+         <view class="weui-cells weui-cells_after-title">
+            <view class="weui-cell weui-cell_input weui-cell_vcode">
+              <view class="weui-cell__hd">
+                <view class="weui-label">输入密码</view>
+              </view>
+              <view class="weui-cell__bd">
+                <input class="weui-input" name="password" password maxlength="18" placeholder="请输入密码"/>
+              </view>
+            </view>
+            <view class="weui-cell weui-cell_input weui-cell_vcode">
+              <view class="weui-cell__hd">
+                <view class="weui-label">确认密码</view>
+              </view>
+              <view class="weui-cell__bd">
+                <input class="weui-input" name="retry" password maxlength="18" placeholder="请确认密码"/>
+              </view>
+            </view>
+          </view>
+
+          <view class="weui-btn-area">
+            <button class="weui-btn" type="primary" form-type="submit">下一步</button>
+          </view>
+        </view>
+      </form>
+    </view>  
+  </view>
+
+  <Copyright buttom="true" />
+  <!-- 分类 -->
+<!--  <SliderPanel :display.sync="isInnerDisplay" btn='false'>
+    <view slot="title">班级</view>
+    <view slot="content" class="weui-cells-form">
+      <radio-group id="deptName" key="" bindchange="radio" @tap="selectInner">
+        <label class="weui-cell weui-check__label" wx:for="{{innerDept}}" wx:key="value">
+          <radio class="weui-check" value="{{item.deptName}}" checked="{{input.deptName == item.deptName}}"/>
+          <view class="weui-cell__bd">{{item.deptName}}</view>
+          <view class="weui-cell__ft weui-cell__ft_in-radio" wx:if="{{input.deptName == item.deptName}}">
+            <icon class="weui-icon-radio" type="success_no_circle" size="16"></icon>
+          </view>
+        </label>
+      </radio-group>
+
+    </view>
+  </SliderPanel>  -->
+</template>
+<script>
+  import wepy from 'wepy';
+  import auth from '../../api/auth';
+//  import signin from '../../api/signin';
+  import base from '../../mixins/base';
+  import input from '../../mixins/input';
+  import FormTips from '../../components/weui/tips';
+  import VCode from '../../components/weui/vcode';
+  import Tips from '../../utils/Tips';
+  import SliderPanel from '../../components/common/slider_panel';
+  import Cache from '../../utils/Cache';
+  import WxUtils from '../../utils/WxUtils';
+  import Copyright from '../../components/common/copyright';
+  export default class Reigister extends wepy.page {
+    def = {
+      init: false,
+      loginCode:null,
+      status: 0,
+//      isInnerDisplay: 'false',
+      innerDept: [],
+      input:{},
+      loginMessage: {}
+    };
+    data = {...this.def};
+    async onLoad () {
+      var openId = auth.getConfig('openId');
+      if (openId == null) {
+        openId=await auth.jscode2session();
+        await auth.setConfig('openId', openId);
+      }
+      this.innerDept = await Cache.dept();
+      console.info("this.innerDept",this.innerDept);
+      this.loaded();
+    }
+
+    methods = {
+      radio(e) {
+        console.info("radio",e.detail.value);
+      },
+      // 选择分类
+//      selectInner() {
+//        this.isInnerDisplay = 'false';
+//      },
+      // 展现分类
+//      showInner() {
+//        this.isInnerDisplay = 'true';
+//      },
+      async smsCode() {
+        if (!this.isPhoneValid(this.input.phone)) {
+          return;
+        }
+        // 发送验证码
+        let data;
+        try {
+          data= await auth.smsCode(this.input.phone,"smsCode");
+          console.info('data',data);
+          if(data.success==false && data.msg!=null){
+            Tips.modal(data.msg);
+          }
+
+          if(data.success==true){
+            this.$invoke('VCode', 'cd', 60);
+            Tips.success('验证码已发送');
+          }
+          
+        } catch (e) {
+          Tips.modal(e.message);
+        } finally {
+          this.loaded();
+        }
+      },
+      
+      async smsCodeLogin({detail}) {
+        // 覆盖对象
+        Object.assign(this.loginMessage, detail.value);
+        if (!this.isValid(this.input.phone)) {
+          return;
+        }
+        try {
+          let data = await auth.smsCodeLogin(this.input.phone, this.loginMessage.code);
+          console.info("attributes:",data.attributes);
+          if(data.attributes.status){
+            await auth.setConfig('login_code', data.obj);
+            this.loginCode=data.obj;
+            this.status=data.attributes.status;
+            console.info("status:",this.status);
+          }
+        } catch (e) {
+          this.tips(e.message);
+        } finally {
+          this.loaded();
+        }
+      },
+      async idCardLogin({detail}) {
+        // 覆盖对象
+        Object.assign(this.loginMessage, detail.value);
+        if (!this.validateIdCard(this.loginMessage.idcard)) {
+          return;
+        }
+        if(this.loginCode==null){
+          const loginCode = auth.getConfig('login_code');
+          if (loginCode != null) {
+            this.loginCode=loginCode;
+          }
+        }
+        try {
+          let attributes;
+          try {
+            attributes = await auth.idCardLogin(this.loginCode,this.loginMessage.realname, this.loginMessage.idcard);
+            console.info("attributes:",attributes);
+          } catch (err) {
+              this.tips(err.message);
+              return;
+          }
+
+          if(attributes.status){
+            this.status=attributes.status;
+            console.info("status:",this.status);
+            if(this.status==4){
+              this.$navigate('status');          
+            }
+          }
+        } catch (e) {
+          this.tips(e.message);
+        } finally {
+          this.loaded();
+        }
+      },
+      async userRegister({detail}) {
+/*        if (!this.input.deptName) {
+          this.tips('请选择班级');
+          return;
+        }
+        var deptid = this.innerDept.find(item => item.deptName == this.input.deptName).id;
+        console.info("deptid",deptid); */
+        // 覆盖对象
+        Object.assign(this.loginMessage, detail.value);
+        if (!this.validatePassword(this.loginMessage)) {
+          return;
+        }
+        try{
+          let attributes;
+          const param = {
+            id: this.loginCode,
+            password: this.loginMessage.password,
+//            deptid: deptid
+          };
+
+          try {
+
+            attributes = await auth.userRegister(param);
+            console.info("attributes:",attributes);
+            if(attributes.register==1){
+              await Tips.modal('手机号码已注册');
+            }else{
+              if(attributes.status){
+                this.status=attributes.status;
+                console.info("this.status:",this.status);
+              }
+            }
+          }catch(e){
+            this.tips(e.message);
+          } 
+
+          if(this.status==3){
+            await Tips.success('注册成功');
+            this.$switch('../home/myproject');
+          }
+        } catch (e) {
+          this.tips(e.message);
+        } finally {
+          this.loaded();
+        }
+      },
+
+    };
+    onShareAppMessage () {
+      const title = '乐享商家助手';
+      const url = '/pages/home/index';
+      return Tips.share(title, url, title);
+    }
+
+    /**
+     * 校验表单提交
+     */
+    validatePassword() {
+      if (this.loginMessage.password!=this.loginMessage.retry) {
+        this.tips('密码不一致');
+        return false;
+      }
+      return true;
+    }
+    /**
+     * 校验表单提交
+     */
+    isValid(phone) {
+      if (!this.isPhoneValid(phone)) {
+        return false;
+      }
+      if (this.isEmpty(this.loginMessage.code)) {
+        this.tips('请输入验证码');
+        return false;
+      }
+      return true;
+    }
+    /**
+     * 校验身份证号
+     */
+    validateIdCard(idCard){
+      //15位和18位身份证号码的正则表达式
+      var regIdCard=/^(^[1-9]\d{7}((0\d)|(1[0-2]))(([0|1|2]\d)|3[0-1])\d{3}$)|(^[1-9]\d{5}[1-9]\d{3}((0\d)|(1[0-2]))(([0|1|2]\d)|3[0-1])((\d{4})|\d{3}[Xx])$)$/;
+
+      //如果通过该验证，说明身份证格式正确，但准确性还需计算
+      if(regIdCard.test(idCard)){
+        if(idCard.length==18){
+          var idCardWi=new Array( 7, 9, 10, 5, 8, 4, 2, 1, 6, 3, 7, 9, 10, 5, 8, 4, 2 ); //将前17位加权因子保存在数组里
+          var idCardY=new Array( 1, 0, 10, 9, 8, 7, 6, 5, 4, 3, 2 ); //这是除以11后，可能产生的11位余数、验证码，也保存成数组
+          var idCardWiSum=0; //用来保存前17位各自乖以加权因子后的总和
+          for(var i=0;i<17;i++){
+            idCardWiSum+=idCard.substring(i,i+1)*idCardWi[i];
+          }
+          var idCardMod=idCardWiSum%11;//计算出校验码所在数组的位置
+          var idCardLast=idCard.substring(17);//得到最后一位身份证号码
+          //如果等于2，则说明校验码是10，身份证号码最后一位应该是X
+          if(idCardMod==2){
+            if(idCardLast=="X"||idCardLast=="x"){
+//              console.info("恭喜通过验证啦！");
+            }else{
+              console.info("身份证号码错误！");
+              return false;
+            }
+          }else{
+            //用计算出的验证码与最后一位身份证号码匹配，如果一致，说明通过，否则是无效的身份证号码
+            if(idCardLast==idCardY[idCardMod]){
+//              console.info("恭喜通过验证啦！");
+            }else{
+              console.info("身份证号码错误！");
+              return false;
+            }
+          }
+        }
+      }else{
+        console.info("身份证格式不正确!");
+        return false;
+      }
+      var regRealName=/^[\u4E00-\u9FA5\uf900-\ufa2d·s]{2,20}$/;
+      if(!regRealName.test(this.loginMessage.realname)){
+        this.tips('请输入真实姓名');
+        return false;
+      }
+      console.info('姓名身份证号验证通过');
+      return true;
+    }
+    /**
+     * 校验电话号码
+     */
+    isPhoneValid(phone) {
+      if (this.isEmpty(phone)) {
+        this.tips('请输入手机号码');
+        return false;
+      }
+      const reg = /^1[34578]\d{9}$/;
+      if (!reg.test(phone)) {
+        this.tips('电话号码格式错误');
+        return false;
+      }
+      return true;
+    }
+    mixins = [input, base];
+    config = {
+      navigationBarTitleText: '延吉浪潮'
+    };
+
+    components = {
+      Tips: FormTips,
+      VCode: VCode,
+      SliderPanel: SliderPanel,
+      Copyright: Copyright
+    };
+  }
+</script>
+
+<style lang="scss">
+  @import "../../styles/variable";
+  .brand{
+    padding-top: 60rpx;
+    padding-bottom: 60rpx;
+
+    .logo{
+      width: 100px;
+      height: 100px;
+    }
+
+    text{
+      margin-top: 15rpx;
+      font-size: $text-form;
+    }
+  }
+</style>

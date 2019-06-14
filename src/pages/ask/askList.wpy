@@ -1,0 +1,229 @@
+<template>
+  <view class="container" wx:if="{{init}}">
+    <!--TAB 页-->
+    <ZanTab :tab="tab" fixed="0" @change.user="change"/>
+
+    <!--主内容区域-->
+    <view class="main-box row">
+        <!--分类侧边栏-->
+      <!--右侧滚动-->
+      <scroll-view scroll-y class="goods-box" bindscrolltolower="onReachBottom">
+        <!--分类名称
+        <view class="goods-title row">
+          <text class="weak">{{selectedCategoryName}}</text>
+        </view> -->
+        <!--指南列表-->
+        <view class="guide-list">
+          <repeat for="{{page.list}}" key="index" index="index" item="item">
+            <AskItem :ask.sync="item" @optAsk.user="optAsk"  />
+          </repeat>
+        </view>
+        <Loadmore :page.sync="page" emptyText="暂无项目"/>
+      </scroll-view>
+
+    </view>
+  </view>
+  <view wx:if="{{display == 'true'}}">
+    <SideCategory :display.sync="display" :tab.sync="categories" @change.user="switchTab"  />    
+  </view>
+    <!--操作栏--> 
+    <view >
+      <ActionBar @optAsk.user="optAsk" @back.user="back" create="我来提问"  cancelText="返回" noCancel="0"  /> 
+    </view>
+</template>
+
+<script>
+  import wepy from 'wepy';
+  import base from '../../mixins/base';
+  import pagination from '../../mixins/pagination';
+  import auth from '../../api/auth';
+  import ask from '../../api/ask';
+//  import signin from '../../api/signin';
+  import AskItem from '../../components/ask/askItem';
+  import ZanTab from '../../components/zanui/tab';
+  import SideCategory from '../../components/manusl/side_category';
+  import ActionBar from '../../components/common/action_bar';
+  import Placeholder from '../../components/common/placeholder';
+  import Loadmore from '../../components/weui/loadmore';
+  import Event from '../../utils/Event';
+  import Cache from '../../utils/Cache';
+  import Tips from '../../utils/Tips';
+  export default class AskList extends wepy.page {
+    def = {
+      init: false,
+      display: 'false',
+      page: {
+        list: []
+      },
+      tab: {
+        list: [
+          {id: 'all', title: '全部'},
+          {id: 'transAsk', title: '已翻译'},
+          {id: 'transAnswer', title: '已完结'},
+          {id: 'category', title: '分类'}
+        ],
+        selectedId: 'all',
+        scroll: false
+      },
+      categories: []
+    };
+    data = {...this.def};
+    async onLoad (option) {
+      try{
+        var openId = auth.getConfig('openId');
+        if (openId == null) {
+          openId=await auth.jscode2session();
+          await auth.setConfig('openId', openId);
+        }
+        await this.getColumnList();
+        if(option!=null&&option.columnId!=null){
+          this.categories.selectedId = option.columnId;
+        }
+
+        this.page = ask.askList(this.categories);
+        await this.next();
+        Event.listen(Event.ASK_LIST_UPDATE, this.updateAsk.bind(this), this);
+      } catch (e) {
+        Tips.modal(e.message);
+      } finally {
+        this.loaded();
+      }
+    };
+
+    // 获取分页参数
+    params() {
+      return {
+        ask_status: this.tab.selectedId,
+        category_id: this.categories.selectedId
+      };
+    }
+    async updateAsk(){
+      console.info("updateAsk================");
+      this.reload();
+    };
+    // 获取部门
+    async getColumnList() {
+      // 加载部门
+      this.categories = await Cache.columnList();
+      console.info("this.categories",this.categories);
+      if (this.categories && this.categories.length > 0) {
+        this.categories.selectedId = "all";
+      }
+       this.loaded();
+    };
+
+    methods = {
+      // 点击分类
+      switchTab(option) {
+//        this.tab.categoryId = option.selectedId;
+        console.info("option",option);
+        wx.setNavigationBarTitle({
+          title: option.columnName
+        })
+        this.reload();
+      },
+      change() {
+
+        if(this.tab.selectedId=="category"){
+          this.display="true";
+        }else{
+          this.categories.selectedId="";
+//          if(this.tab.selectedId!="all"){
+            this.reload();          
+//          }
+        }
+      },
+
+      async optAsk(info) {
+        if(info.formId !=null && info.formId != "the formId is a mock one"){
+          ask.collectFormIds(info.formId);
+        }
+        if (info.mode=="display" || await auth.isLogin()) {
+          if(info.mode=="display"){
+            this.$root.$navigate('/pages/ask/askEdit', {categoryId:info.categoryId,askId: info.askId,mode: info.mode});       
+          }else{
+            const roleCode = auth.getConfig('role_code');
+            if(roleCode!=null){
+              
+              if(roleCode.indexOf(info.mode) != -1){
+                if(this.mode=="create"||info.categoryId==null){
+                  var cats=this.categories;
+
+                  if(this.categories.selectedId!=null&&this.categories.selectedId!=""){
+                    info.categoryId=this.categories.selectedId;
+                  }else{
+                    info.categoryId=cats[0].id;
+                  }
+                }
+
+                this.$root.$navigate('/pages/ask/askEdit', {categoryId:info.categoryId,askId: info.askId,mode: info.mode});
+              }else{
+                Tips.modal("没有权限");
+              }
+            }else{
+              this.$root.$navigate('/pages/login/index',{askId: info.askId,mode: info.mode});
+            }
+          }
+
+        }else{
+          this.$root.$navigate('/pages/login/index',{askId: info.askId,mode: info.mode});
+        }
+      },
+      back(info) {
+        console.info("info",info);
+        if(info.formId !=null && info.formId != "the formId is a mock one"){
+          ask.collectFormIds(info.formId);
+        }
+        wepy.navigateBack();
+      },
+
+    };
+    computed = {
+      selectedCategoryName() {
+        if (this.init && this.categories && this.categories.list && this.categories.list.length > 0) {
+          const selectedId = this.categories.selectedId;
+          const selectedCategory = this.categories.list.find(item => item.id == selectedId);
+          return selectedCategory ? selectedCategory.title : "全部";
+        }
+      }
+    };
+    events = {};
+    components = {
+      ZanTab: ZanTab,
+      Placeholder: Placeholder,
+      AskItem: AskItem,
+      ActionBar: ActionBar,
+      Loadmore: Loadmore,
+      SideCategory: SideCategory
+    };
+    mixins = [base, pagination];
+    config = {
+      navigationBarTitleText: '提问列表',
+      enablePullDownRefresh: true
+    };
+  }
+</script>
+
+<style lang="scss">
+  @import "../../styles/variable";
+  .main-box{
+    width: 100%;
+    position: absolute;
+    top: 43px;
+/*    bottom: 55px; */
+
+    .goods-box{
+      flex: 1;
+      height: 100%;
+      .goods-title{
+        height: 30px;
+        padding-left: 20rpx;
+        align-items: center;
+        border-bottom: $border;
+      }
+      .guide-list{
+        background-color: #FFF;
+      }
+    }
+  }
+</style>

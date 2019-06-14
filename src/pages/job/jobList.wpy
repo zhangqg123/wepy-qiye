@@ -1,0 +1,154 @@
+<template>
+  <view class="container" wx:if="{{init}}">
+    <view class="top-box row">
+      <text class="default xxl mr20" >{{ jobTitle }}人 </text>
+      <text class="primary xxl ml20">{{ phone  }}</text>
+    </view>
+    <view class="h-gap"/>
+    <!--主内容区域-->
+    <view class="main-box row">
+        <!--分类侧边栏-->
+      <!--右侧滚动-->
+      <scroll-view scroll-y class="goods-box" bindscrolltolower="onReachBottom">
+        <!--分类名称
+        <view class="goods-title row">
+          <text class="weak">{{selectedCategoryName}}</text>
+        </view> -->
+        <!--指南列表-->
+        <view class="guide-list">
+          <repeat for="{{page.list}}" key="index" index="index" item="item">
+            <JobItem :ask.sync="item" @optAsk.user="optAsk" />
+          </repeat>
+        </view>
+        <Loadmore :page.sync="page" emptyText="暂无项目"/>
+      </scroll-view>
+
+    </view>
+  </view>
+</template>
+
+<script>
+  import wepy from 'wepy';
+  import base from '../../mixins/base';
+  import pagination from '../../mixins/pagination';
+  import auth from '../../api/auth';
+  import ask from '../../api/ask';
+  import JobItem from '../../components/job/jobItem';
+  import Placeholder from '../../components/common/placeholder';
+  import Loadmore from '../../components/weui/loadmore';
+  import Event from '../../utils/Event';
+  import Cache from '../../utils/Cache';
+  import Tips from '../../utils/Tips';
+  export default class JobList extends wepy.page {
+    def = {
+      init: false,
+      display: 'false',
+      jobTitle:'',
+      openId : '',
+      phone: 1,
+      page: {
+        list: []
+      },
+      categories: []
+    };
+    data = {...this.def};
+    async onLoad (option) {
+      try{
+        this.phone=option.phone;
+        console.info('this.phone',this.phone);
+        var openId = auth.getConfig('openId');
+        if (openId == null) {
+          openId=await auth.jscode2session();
+          await auth.setConfig('openId', openId);
+        }
+        this.openId=openId;
+
+        if(option.mode=="create"){
+          this.jobTitle="提问";
+        }
+        if(option.mode=="trans"){
+          this.jobTitle="翻译";
+        }
+        if(option.mode=="answer"){
+          this.jobTitle="回答";
+        }
+        wx.setNavigationBarTitle({
+          title: "我的"+this.jobTitle  //页面标题为动态参数
+        })
+        this.mode=option.mode;
+        this.categories = await Cache.columnList();
+
+        this.page = ask.askList(this.categories);
+        await this.next();
+        Event.listen(Event.JOB_LIST_UPDATE, this.updateAsk.bind(this), this);
+      } catch (e) {
+        Tips.modal(e.message);
+      } finally {
+        this.loaded();
+      }
+    };
+
+    async updateAsk(){
+      console.info("updateAsk================JOBLIST");
+      this.reload();
+    };
+
+    params() {
+      return {
+//        guide_status: this.tab.selectedId,
+        openId: this.openId,
+        mode: this.mode
+      };
+    }
+
+    methods = {
+      async optAsk(info) {
+        console.info('info',info);
+        this.$root.$navigate('/pages/ask/askEdit', {askId: info.askId,mode: info.mode});       
+      }
+
+    };
+    computed = {
+    };
+    events = {};
+    components = {
+      Placeholder: Placeholder,
+      JobItem: JobItem,
+      Loadmore: Loadmore,
+    };
+    mixins = [base, pagination];
+    config = {
+ //     navigationBarTitleText: '提问列表',
+      enablePullDownRefresh: true
+    };
+  }
+</script>
+
+<style lang="scss">
+  @import "../../styles/variable";
+  .top-box{
+    background-color: #FFF;
+    padding-left: 20rpx;
+    height:50px;
+  }
+  .main-box{
+    width: 100%;
+//    position: absolute;
+//    top: 50px;
+/*    bottom: 55px; */
+
+    .goods-box{
+      flex: 1;
+      height: 100%;
+      .goods-title{
+        height: 30px;
+        padding-left: 20rpx;
+        align-items: center;
+        border-bottom: $border;
+      }
+      .guide-list{
+        background-color: #FFF;
+      }
+    }
+  }
+</style>

@@ -1,0 +1,105 @@
+<template>
+  <!--遮罩层-->
+  <view class="slider-panel-cover" wx:if="{{display == 'true'}}" @tap="close"></view>
+  <scroll-view class="side-category {{display == 'true' ? 'slider-panel-show' : '' }} " scroll-y>
+    <block wx:for="{{tab}}" wx:key="id">
+      <view class="tab-item {{item.id == tab.selectedId ? 'tab-item-seleted' : ''}}" @tap="switchTab({{item.id}},{{item.columnName}})" >
+        <text class="inline">{{item.columnName}}</text>
+        <view class="weui-badge tab-num" wx:if="{{item.count > 0}}">{{item.count}}</view> 
+      </view>
+    </block>
+    <view wx:if="{{tab.length < 1}}" class="row-center">
+      <text class="muted mt20">暂无信息</text>
+    </view>
+  </scroll-view>
+</template>
+
+
+<script>
+  import wepy from 'wepy'
+  export default class SideCategory extends wepy.component {
+    props = {
+      tab: {
+        twoWay: true
+      },
+      display: {
+        default: 'false',
+        twoWay: true
+      }
+    };
+    data = {};
+    methods = {
+      switchTab(selectedId,columnName) {
+        this.tab.selectedId = selectedId;
+        this.display="false";
+        this.$emit('change', {selectedId:selectedId,columnName:columnName});
+      },
+      close() {
+        this.display = 'false';
+      }
+    };
+    events = {};
+    onLoad() {
+      console.info("display",this.display);
+    }
+  }
+</script>
+
+<style lang="scss">
+  @import "../../styles/variable";
+  .slider-panel-cover{
+    width: 100%;
+    height: 100%;
+    position: fixed;
+    top: 0;
+    background-color: black;
+    -webkit-filter:opacity(.6);
+    z-index: 100000;
+  }
+  .slider-panel-show{
+    transform: translateY(0);
+  }
+
+  .side-category{
+    position: fixed;
+    display: flex;
+    flex-direction: column;
+//    top: 0;
+    right: 0rpx;
+    z-index: 100000;
+    background-color:#F8F8F8; 
+    transition: all 0.4s ease;
+    border-right: $border;
+    width: 230rpx;
+    min-width: 230rpx;
+    height: 100%;
+
+    .tab-item {
+      position: relative;
+      height: 110rpx;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      background-color: #F8F8F8;
+      border-left: 8rpx solid #F8F8F8;
+      border-bottom: $border;
+      padding-left: 20rpx;
+      text{ color: $color-weak}
+      .tab-num{
+        position: absolute;
+        right: 5px;
+        top: 5px;
+      }
+    }
+
+    .tab-item-seleted{
+      border-left: 4px solid $color-primary;
+      background-color: #FFF;
+      text{
+        color: $color-normal;
+        font-weight: bold;
+      }
+    }
+  }
+
+</style>

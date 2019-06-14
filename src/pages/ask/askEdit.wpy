@@ -1,0 +1,738 @@
+<template>
+<Tips/>
+<view class="container" >
+  <view wx:if="{{mode == 'display'}}">
+      <view class="detail-box" >
+        <view class="weui-cells-form">
+          <view class="weui-cell">
+            <view class="weui-cell__bd"><text class="primary x1">显示问题</text>
+            </view>
+          </view>
+        </view>
+        <view class="weui-cells-form">
+          <view class="weui-cell weui-cell_input">
+            <view class="weui-cell__hd">
+              <view class="weui-label">提问标题</view>
+            </view>
+            <view class="weui-cell__bd">
+              <view class="ask-item" >{{askItem.askTitle}}</view>
+            </view>
+          </view>
+          <view class="weui-cell weui-cell_input">
+            <view class="weui-cell__hd">
+              <view class="weui-label">提问日期</view>
+            </view>
+            <view class="weui-cell__bd">
+              <view class="ask-item" >{{askItem.askDate}}</view>
+            </view>
+          </view>
+          <view class="weui-cell weui-cell_input">
+            <view class="weui-cell__hd">
+              <view class="weui-label">简介</view>
+            </view>
+            <view class="weui-cell__bd">
+              <view class="ask-item" >
+                <textarea class="weui-textarea ask-item" style="height: 4.3em" >{{askItem.description}}</textarea>
+              </view>
+            </view>
+          </view>
+        </view>
+        <view class="weui-cells-form">
+          <view class="weui-cell">
+            <view class="weui-cell__hd">
+              <view class="weui-label">
+                <text class="primary x1 mr20">提问视频</text>
+                
+              </view>
+            </view>
+            <view class="weui-cell__bd" wx:if="{{askItem.askStatus == 11}}">
+              <view class="ask-item" ><text class="danger x1 ml20">请等待审核</text></view>
+            </view>
+
+          </view>
+          <view class="video-item" >
+            <video class= "videoCss" src='{{srcUrl}}' poster="{{srcUrl?posterUrl:''}}" object-fit="cover">
+
+           </video>
+
+ 
+          </view>
+
+          <view class="weui-cell">
+            <view class="weui-cell__hd">
+              <view class="weui-label"><text class="primary x1">翻译提问</text></view>
+            </view>
+          </view>
+          <view class="video-item">
+            <video class= "videoCss" src='{{srcTransAskUrl}}' poster="{{srcTransAskUrl?posterUrl:''}}" object-fit="cover"></video>
+          </view>
+
+          <view class="weui-cell">
+            <view class="weui-cell__hd">
+              <view class="weui-label"><text class="primary x1">回答提问</text></view>
+            </view>
+            <view class="weui-cell__bd" wx:if="{{askItem.askStatus == 31}}">
+              <view class="ask-item" ><text class="danger x1 ml20">请等待审核</text></view>
+            </view>
+          </view>
+          <view class="video-item">
+            <video class= "videoCss" src='{{srcAnswerUrl}}' ></video>
+          </view>
+
+          <view class="weui-cell">
+            <view class="weui-cell__hd">
+              <view class="weui-label"><text class="primary x1">翻译回答</text></view>
+            </view>
+          </view>
+          <view class="video-item">
+            <video class= "videoCss" src='{{srcTransAnswerUrl}}' ></video>
+          </view>
+        </view>
+      </view> 
+  <!--  <view class="ml20 mt20 mr20 mb20 row">
+      <form bindsubmit="wxPay" report-submit='true'>
+        <button form-type="submit" class="" type="primary"  >返回</button>
+      </form> 
+      <form bindsubmit="wxPay" report-submit='true'>
+        <button form-type="submit" class="" type="primary"  >打赏</button>
+      </form>    
+    </view> -->
+    <view >
+      <ActionBar @optAsk.user="wxPay" @back.user="back" create="打赏"  cancelText="返回" noCancel="0"  /> 
+    </view>
+  </view>
+  <view wx:if="{{mode == 'trans' || mode == 'create' || mode == 'askEdit' || mode == 'answer'}}">
+    <form >
+      <!--创建视频-->
+      <view class="detail-box" wx:if="{{ mode == 'create' || mode == 'askEdit'}}">
+        <view class="weui-cells-form">
+          <view class="weui-cell">
+            <view class="weui-cell__bd"><text class="primary x1">我要提问</text>
+            </view>
+          </view>
+        </view>
+        <view class="weui-cells-form">
+          <view class="weui-cell weui-cell_input">
+            <view class="weui-cell__hd">
+              <view class="weui-label">提问标题</view>
+            </view>
+            <view class="weui-cell__bd">
+              <view class="ask-item" >
+                <input class="weui-input" id="askTitle" @blur="input" value="{{input.askTitle}}" placeholder="请输入标题"/>
+              </view>
+            </view>
+          </view>
+          <view class="weui-cell weui-cell_input">
+            <view class="weui-cell__hd">
+              <view class="weui-label">简介</view>
+            </view>
+            <view class="weui-cell__bd">
+              <textarea class="weui-textarea ask-item" id="description" value="{{input.description}}" placeholder="请输入简介" style="height: 4.3em"  @input="input" />
+       <!--       <input class="weui-input" id="description" @blur="input" value="{{input.description}}"
+                     placeholder="请输入简介"/>  -->
+            </view>
+          </view>
+        </view>
+        <view class="weui-cells-form">
+          <view class="weui-cell">
+            <view class="weui-cell__hd">
+              <view class="weui-label"><text class="primary x1">提问视频</text></view>
+            </view>
+          </view>
+          <view class="section">
+            <view class="video-item">
+              <video class= "videoCss" src='{{srcUrl}}' ></video>
+            </view>
+            <view class="row">
+              <view class="ml20" style="width: 425rpx;">
+                <input class="weui-input" id="askUrl"  value="{{chooseDisplay}}" placeholder="请选择视频上传" />
+              </view>
+              <view class="mt10 ml20 mr20 row-end" style="width: 325rpx;">
+                <form bindsubmit="chooseVideo({{mode}})" report-submit='true'>
+                  <button form-type="submit" class="weui-btn mini-btn" type="primary"  size="mini">选择</button>
+                </form> 
+                <form bindsubmit="uploadVideo({{mode}})" report-submit='true'>
+                  <button form-type="submit" class="weui-btn mini-btn" type="weak"  size="mini">上传</button>
+                </form> 
+          <!--      <button class="weui-btn mini-btn" type="primary" size="mini" @tap="chooseVideo({{mode}})">选择</button> -->
+          <!--      <button class="weui-btn mini-btn"  type="weak" size="mini" @tap="uploadVideo({{mode}})">上传</button> -->
+              </view>
+            </view>
+          </view>
+
+        </view>
+      </view> 
+
+      <!--编辑视频-->
+      <view class="detail-box" wx:if="{{ mode == 'trans'||mode=='answer'}}">
+        <view class="weui-cells-form">
+          <view class="weui-cell">
+            <view class="weui-cell__bd"><text class="primary x1">编辑信息</text>
+            </view>
+          </view>
+        </view>
+        <view class="weui-cells-form">
+          <view class="weui-cell weui-cell_input">
+            <view class="weui-cell__hd">
+              <view class="weui-label">提问标题</view>
+            </view>
+            <view class="weui-cell__bd">
+              <view class="ask-item" >{{askItem.askTitle}}</view>
+            </view>
+          </view>
+          <view class="weui-cell weui-cell_input">
+            <view class="weui-cell__hd">
+              <view class="weui-label">提问日期</view>
+            </view>
+            <view class="weui-cell__bd">
+              <view class="ask-item" >{{askItem.askDate}}</view>
+            </view>
+          </view>
+          <view class="weui-cell weui-cell_input">
+            <view class="weui-cell__hd">
+              <view class="weui-label">简介</view>
+            </view>
+            <view class="weui-cell__bd" wx:if="{{mode == 'askEdit'||mode == 'trans'}}">
+              <textarea class="weui-textarea ask-item" id="description" value="{{input.description}}" placeholder="请输入简介" style="height: 4.3em"  @input="input" />
+            </view>
+            <view class="weui-cell__bd" wx:if="{{mode == 'answer'}}">
+              <textarea class="weui-textarea ask-item" value="{{askItem.description}}" style="height: 4.3em" disabled ></textarea>
+            </view>
+          </view>
+        </view>
+        <view class="weui-cells-form">
+          <view class="weui-cell">
+            <view class="weui-cell__hd">
+              <view class="weui-label"><text class="primary x1">提问视频</text></view>
+            </view>
+          </view>
+
+          <view class="video-item">
+            <video class= "videoCss" src='{{srcUrl}}'></video>
+          </view>
+
+          <view class="weui-cell">
+            <view class="weui-cell__hd">
+              <view class="weui-label"><text class="primary x1">翻译提问</text></view>
+            </view>
+          </view>
+
+          <view class="section">
+            <view class="video-item">
+              <video class= "videoCss" src='{{srcTransAskUrl}}'></video>
+            </view>
+            <view class="weui-cell weui-cell_input" wx:if="{{mode == 'trans' && (askItem.askStatus == 12 || askItem.askStatus == 21)}}" >
+              <view style="width: 425rpx;">
+                <input class="weui-input" id="transAskUrl" value="{{chooseTransAskDisplay}}" placeholder="请选择上传视频"/>
+              </view>
+              <view class="ml20 row" style="width: 325rpx;">
+                <button class="weui-btn mini-btn" type="primary" size="mini" @tap="chooseVideo('trans')">选择</button>
+                <button class="weui-btn mini-btn"  type="weak" size="mini" @tap="uploadVideo('trans')">上传</button>
+              </view>
+            </view>
+          </view>
+
+          <view class="weui-cell">
+            <view class="weui-cell__hd">
+              <view class="weui-label"><text class="primary x1">回答提问</text></view>
+            </view>
+          </view>
+          <view class="section">
+            <view class="video-item">
+              <video class= "videoCss" src='{{srcAnswerUrl}}' ></video>
+            </view>
+            <view class="weui-cell weui-cell_input" wx:if="{{mode == 'answer' && (askItem.askStatus == 21 || askItem.askStatus == 31)}}">
+              <view style="width: 425rpx;">
+                <input class="weui-input" id="answerUrl" value="{{chooseAnswerDisplay}}" placeholder="请选择上传视频"/>
+              </view>
+              <view class="ml20 row" style="width: 325rpx;">
+                <button class="weui-btn mini-btn" type="primary" size="mini" @tap="chooseVideo('answer')">选择</button>
+                <button class="weui-btn mini-btn"  type="weak" size="mini" @tap="uploadVideo('answer')">上传</button>
+              </view>
+            </view>
+          </view>
+
+          <view class="weui-cell" wx:if="{{mode == 'trans'}}">
+            <view class="weui-cell__hd">
+              <view class="weui-label"><text class="primary x1">翻译回答</text></view>
+            </view>
+          </view>
+
+          <view class="section" wx:if="{{mode == 'trans'}}">
+            <view class="video-item">
+              <video class= "videoCss" src='{{srcTransAnswerUrl}}'></video>
+            </view>
+            <view class="weui-cell weui-cell_input" wx:if="{{mode == 'trans' && (askItem.askStatus == 32 || askItem.askStatus == 41)}}">
+              <view style="width: 425rpx;">
+                <input class="weui-input" id="transAnswerUrl" value="{{chooseTransAnswerDisplay}}" placeholder="请选择上传视频"/>
+              </view>
+              <view class="ml20 row" style="width: 325rpx;">
+                <button class="weui-btn mini-btn" type="primary" size="mini" @tap="chooseVideo('transAnswer')">选择</button>
+                <button class="weui-btn mini-btn"  type="weak" size="mini" @tap="uploadVideo('transAnswer')">上传</button>
+              </view>
+            </view>
+          </view>
+
+        </view>
+      </view> 
+
+
+      <!--操作栏-->
+      <ActionPanel :mode.sync="mode" @submit.user="submit" @remove.user="remove"/>
+    </form>
+  </view>
+</view>
+</template>
+
+<script>
+  import wepy from 'wepy';
+  import auth from '../../api/auth';
+  import ask from '../../api/ask';
+  import base from '../../mixins/base';
+  import input from '../../mixins/input';
+  import Tips from '../../utils/Tips';
+  import Event from '../../utils/Event';
+  import Cache from '../../utils/Cache';
+  import FormTips from '../../components/weui/tips';
+  import ActionBar from '../../components/common/action_bar';
+  import ActionPanel from '../../components/common/action_panel';
+  import SliderPanel from '../../components/common/slider_panel';
+
+  export default class AskEdit extends wepy.page {
+    def = {
+      input: {
+      },
+      askItem: {
+      },
+      from: "home",
+      categoryId: '',
+      posterUrl:'',
+      srcUrl: '',
+      srcTransAskUrl: '',
+      srcAnswerUrl: '',
+      srcTransAnswerUrl: '',
+      chooseDisplay:'',
+      chooseUrl: '',
+      chooseTransAskDisplay:'',
+      chooseTransAskUrl: '',
+      chooseAnswerDisplay:'',
+      chooseAnswerUrl: '',
+      chooseTransAnswerDisplay: '',
+      chooseTransAnswerUrl: '',
+      uploadFlag : false,
+      mode: 'create',
+      loginCode: null,
+//      innerCategories: [],
+      init: false,
+//      isInnerDisplay: 'false'
+    };
+    data = {...this.def};
+    async onLoad (option) {
+      try {
+        var baseUpload='/upload/img/lst/';
+        console.info("option",option);
+        if(option.mode=="create"){
+          this.mode="create";
+          this.categoryId=option.categoryId;
+        }
+
+        if(option.mode=="display" || option.mode=="askEdit" || option.mode=="trans" || option.mode=="answer"){
+          if(option.mode=="display"){
+            this.mode="display";
+          }
+          if(option.mode=="askEdit"){
+            this.mode="askEdit";
+          }
+          if(option.mode=="trans"){
+            this.mode="trans";
+          }
+          if(option.mode=="answer"){
+            this.mode="answer";
+          }
+          this.posterUrl='https://hunchun.zqgzht.com/upload/img/lst/poster.png';
+
+          this.askItem = await ask.queryOneAsk(option.askId);
+          this.input=this.askItem;
+          console.info("this.input",this.input);
+          if(this.input.askUrl!=null&&this.input.askUrl!=''){
+            this.srcUrl = wepy.$instance.globalData.baseUrl2+baseUpload+this.input.askOpenId+'/'+this.input.askUrl;
+            console.info("this.srcUrl",this.srcUrl);
+          }
+          
+          if(this.input.transAskUrl!=null&&this.input.transAskUrl!=''){
+            this.srcTransAskUrl = wepy.$instance.globalData.baseUrl2+baseUpload+this.input.dealOpenId+'/'+this.input.transAskUrl;
+
+          }
+          if(this.input.answerUrl!=null&&this.input.answerUrl!=''){
+            this.srcAnswerUrl = wepy.$instance.globalData.baseUrl2+baseUpload+this.input.answerOpenId+'/'+this.input.answerUrl;
+
+          }
+          if(this.input.transAnswerUrl!=null&&this.input.transAnswerUrl!=''){
+            this.srcTransAnswerUrl = wepy.$instance.globalData.baseUrl2+baseUpload+this.input.dealOpenId+'/'+this.input.transAnswerUrl;
+
+          }
+        }
+
+      } catch (e) {
+        Tips.modal(e.message);
+      } finally {
+        this.loaded();
+      }
+    };
+    collect(formId){
+      if(formId !=null && formId != "the formId is a mock one"){
+        ask.collectFormIds(formId);
+      }
+    };
+    getOldFile(oldUrl){
+      if(oldUrl!=null || oldUrl!=''){
+        var obj=oldUrl.lastIndexOf("/");
+        return oldUrl.substr(obj+1);
+      }
+      return null;
+    }            
+
+    methods = {
+      async wxPay (e) {
+        var code = '' ;    //传给服务器以获得openId
+        var timestamp = ''  ; //时间戳
+        var nonceStr =  '' ;  //随机字符串，后台返回
+        var prepayId = '' ;   //预支付id，后台返回
+        var paySign = '' ;    //加密字符串
+        var package2 = '';
+        var signType = '';
+        //获取用户登录状态
+        wx.login({
+            success: function(res) {
+              if (res.code) { 
+                code = res.code     
+                //发起网络请求,发起的是HTTPS请求，向服务端请求预支付
+                wx.request({
+                  url: 'https://hunchun.zqgzht.com/work/wxpay/prepay.do',
+                  data: {
+                    code: res.code
+                  },
+                  success: function(res) {
+                    
+                    if(res.data.result == true){
+                      
+                      nonceStr = res.data.nonceStr;
+                      prepayId = res.data.prepayId;
+                      package2=res.data.package;
+                      paySign=res.data.paySign;
+                      timestamp=res.data.timeStamp;
+                      signType=res.data.signType;
+                      // 发起微信支付
+                      wx.requestPayment({
+                        'timeStamp': timestamp,
+                        'nonceStr': nonceStr,
+                        'package': package2,
+                        'signType': signType,
+                        'paySign': paySign,
+                        'success':function(res){
+                        // 保留当前页面，跳转到应用内某个页面，使用wx.nevigeteBack可以返回原页面
+                        //  wx.navigateTo({
+                        //    url: '../pay/pay'
+                        //  })
+                          Tips.success('打赏成功');
+                        },
+                        'fail':function(res){
+                          console.log(res.errMsg)
+                        }
+                      })
+                    }else{
+                      console.log('请求失败' + res.data.info)
+                    }
+                  }
+                })
+              } else {
+                console.log('获取用户登录态失败！' + res.errMsg)
+              }
+            }
+        });
+      },
+      back(info) {
+        console.info("info",info);
+        if(info.formId !=null && info.formId != "the formId is a mock one"){
+          ask.collectFormIds(info.formId);
+        }
+        wepy.navigateBack();
+      },      
+      chooseVideo(option,e) {
+        this.collect(e.detail.formId);
+        const self = this
+        wx.chooseVideo({
+          sourceType: ['album', 'camera'],
+          maxDuration: 60,
+          camera: ['front', 'back'],
+          success(res) {
+//            that.setData({
+//              src: res.tempFilePath
+//            })
+            self.uploadFlag=false;
+            if(option=="create"||option=="askEdit"){
+              self.chooseDisplay='已选择视频，请上传';
+              self.chooseUrl=res.tempFilePath;
+            }
+            if(option=="trans"){
+              self.chooseTransAskDisplay='已选择视频，请上传';
+              self.chooseTransAskUrl=res.tempFilePath;
+            }
+            if(option=="answer"){
+              self.chooseAnswerDisplay='已选择视频，请上传';
+              self.chooseAnswerUrl=res.tempFilePath;
+            }
+            if(option=="transAnswer"){
+              self.chooseTransAnswerDisplay='已选择视频，请上传';
+              self.chooseTransAnswerUrl=res.tempFilePath;
+            }
+          }
+        })
+      },
+      async uploadVideo (option,e) {
+        this.collect(e.detail.formId);
+        try {
+          if(option=="create"||option=="askEdit"){
+            if(this.chooseUrl!=null&&this.chooseUrl!=''){
+              var oldUrl=this.srcUrl;
+              var existFile=this.getOldFile(oldUrl);
+
+              console.info('oldUrl',oldUrl);
+              Tips.loading('上传中');
+              const result = await ask.upload(this.chooseUrl,existFile);
+              const file = JSON.parse(result);
+
+              this.chooseDisplay='已上传视频，请保存';
+
+              this.chooseUrl=file.attributes.fileKey;
+              this.srcUrl = wepy.$instance.globalData.baseUrl2+'/'+file.attributes.url+this.chooseUrl;
+              console.info('this.srcUrl',this.srcUrl);
+              this.uploadFlag=true;
+            }
+          }
+          if(option=="trans"){
+            if(this.chooseTransAskUrl!=null&&this.chooseTransAskUrl!=''){
+              var oldUrl=this.srcTransAskUrl;
+              var existFile=this.getOldFile(oldUrl);
+              Tips.loading('上传中');
+              const result = await ask.upload(this.chooseTransAskUrl,existFile);
+              const file = JSON.parse(result);
+              this.chooseTransAskDisplay='已上传视频，请保存';
+              this.chooseTransAskUrl=file.attributes.fileKey;
+              this.srcTransAskUrl = wepy.$instance.globalData.baseUrl2+'/'+file.attributes.url+this.chooseTransAskUrl;
+              this.uploadFlag=true;
+            }
+          }
+          if(option=="answer"){
+            if(this.chooseAnswerUrl!=null&&this.chooseAnswerUrl!=''){
+              var oldUrl=this.srcAnswerUrl;
+              var existFile=this.getOldFile(oldUrl);
+              Tips.loading('上传中');
+              const result = await ask.upload(this.chooseAnswerUrl,existFile);
+              const file = JSON.parse(result);
+              this.chooseAnswerDisplay='已上传视频，请保存';
+              this.chooseAnswerUrl=file.attributes.fileKey;
+              this.srcAnswerUrl = wepy.$instance.globalData.baseUrl2+'/'+file.attributes.url+this.chooseAnswerUrl;
+              this.uploadFlag=true;
+            }
+          }
+          if(option=="transAnswer"){
+            if(this.chooseTransAnswerUrl!=null&&this.chooseTransAnswerUrl!=''){
+              var oldUrl=this.srcTransAnswerUrl;
+              var existFile=this.getOldFile(oldUrl);
+              Tips.loading('上传中');
+              const result = await ask.upload(this.chooseTransAnswerUrl,existFile);
+              const file = JSON.parse(result);
+              this.chooseTransAnswerDisplay='已上传视频，请保存';
+              this.chooseTransAnswerUrl=file.attributes.fileKey;
+              this.srcTransAnswerUrl = wepy.$instance.globalData.baseUrl2+'/'+file.attributes.url+this.chooseTransAnswerUrl;
+              this.uploadFlag=true;
+            }
+          }
+        } catch (e) {
+          this.tips(e.message);
+          console.info("e.message",e.message);
+        } finally {
+          this.loaded();
+        }
+      },
+      // 删除
+      async remove() {
+        console.info("this.input.applyStatus",this.input.applyStatus);
+        await Tips.confirm('是否确认删除该申请？');
+        await applies.remove(this.input.id,this.loginCode);
+        await Tips.success('删除成功');
+        Event.emit(Event.GOODS_LIST_UPDATE);
+        wepy.navigateBack();
+      },
+
+      // 提交表单
+      async submit(option) {
+        try{
+          this.collect(option.formId);
+          if (!this.validate()) {
+            return;
+          }
+          var data = {
+
+          };
+          Tips.loading('保存中', true);
+          var openId = await auth.getConfig('openId');
+          var formIds = wepy.$instance.globalData.globalFormIds;  // 获取全局推送码
+          if (formIds!=null && formIds.length>0) {
+              formIds = JSON.stringify(formIds);  // 转换成JSON字符串
+              wepy.$instance.globalData.globalFormIds = [];  
+              var result=await ask.uploadFormIds(formIds);
+              console.info("result",result);
+          }
+        
+          if(this.mode=="create"){
+            data=this.input;
+            data.askOpenId=openId;
+            data.categoryId=this.categoryId;
+            console.info("data",data);
+            if(this.uploadFlag==true && this.chooseUrl!=null&&this.chooseUrl!=''){
+              data.askStatus=11; // 11 提问上传未审核 12 提问审核通过
+              data.askUrl = this.chooseUrl;
+              await ask.createAsk(data);
+              await Tips.success('创建成功！');
+              Event.emit(Event.ASK_LIST_UPDATE);
+              wepy.navigateBack();
+            }else{
+              Tips.loaded();
+              await Tips.modal('请上传视频');
+            }
+          }
+
+          if(this.mode=="askEdit"){
+            data.id=this.askItem.id;
+            data.askTitle=this.input.askTitle;
+            data.description=this.input.description;
+
+            if(this.uploadFlag==true && this.chooseUrl!=null&&this.chooseUrl!=''){
+              data.answerOpenId=openId;
+              data.askUrl = this.chooseUrl;
+              data.askStatus=11; // 31 回答提问未审核 32 回答审核通过
+              console.info("data",data);
+
+              await ask.updateAsk(data);
+              await Tips.success('更新成功！');
+
+              Event.emit(Event.ASK_LIST_UPDATE);
+              Event.emit(Event.JOB_LIST_UPDATE);
+              wepy.navigateBack();
+            }else{
+              Tips.loaded();
+              await Tips.modal('请上传视频');
+            }
+          }
+
+          if(this.mode=="trans"){
+            data.id=this.askItem.id;
+            data.description=this.input.description;
+
+            if(this.chooseTransAskUrl!=null&&this.chooseTransAskUrl!=''){
+              data.transAskUrl = this.chooseTransAskUrl;
+              data.askStatus=21; //翻译提问
+            }
+            if(this.chooseTransAnswerUrl!=null&&this.chooseTransAnswerUrl!=''){
+              data.transAnswerUrl = this.chooseTransAnswerUrl;
+              data.askStatus=41; //翻译回答
+            }
+            if(this.uploadFlag==true && data.askStatus==21 || data.askStatus==41){
+              data.dealOpenId=openId;
+              data.askOpenId=this.askItem.askOpenId;
+              console.info("data",data);
+
+              await ask.updateAsk(data);
+              await Tips.success('更新成功！');
+
+              Event.emit(Event.ASK_LIST_UPDATE);
+              wepy.navigateBack();
+
+            }else{
+              Tips.loaded();
+              await Tips.modal('请上传视频');
+
+            }
+          }
+
+          if(this.mode=="answer"){
+            data.id=this.askItem.id;
+//            data.description=this.input.description;
+
+            if(this.uploadFlag==true && this.chooseAnswerUrl!=null&&this.chooseAnswerUrl!=''){
+              data.answerOpenId=openId;
+              data.answerUrl = this.chooseAnswerUrl;
+              data.askStatus=31; // 31 回答提问未审核 32 回答审核通过
+              console.info("data",data);
+
+              await ask.updateAsk(data);
+              await Tips.success('更新成功！');
+
+              Event.emit(Event.ASK_LIST_UPDATE);
+              wepy.navigateBack();
+            }else{
+              Tips.loaded();
+              await Tips.modal('请上传视频');
+            }
+          }
+        } catch (e) {
+          await Tips.modal(e.message);
+//          this.tips(e.message);
+        } finally {
+          this.loaded();
+        }
+
+      }
+    };
+    validate() {
+      let rules = [
+        {
+          value: this.input.askTitle,
+          method: 'required',
+          message: '请输入提问标题'
+        },
+      ];
+
+      const result = this.check(rules);
+      if (!result) {
+        return false;
+      }
+      return true;
+    }
+
+/*
+    computed = {
+      detailText() {
+        const size = this.details.length;
+        return size > 0 ? `已保存${size}条详情` : '请点击编辑详情';
+      }
+    };
+*/
+    components = {
+      Tips: FormTips,
+      ActionBar: ActionBar,
+      SliderPanel: SliderPanel,
+      ActionPanel: ActionPanel
+    };
+    mixins = [base, input];
+    config = {
+      navigationBarTitleText: '内容'
+    };
+  }
+</script>
+<style lang="scss">
+  @import "../../styles/variable";
+  .ask-item{
+    padding-top:20rpx;
+    padding-bottom:20rpx
+  }
+  .video-item{
+    margin-left:20rpx;
+    margin-right:20rpx;
+  }
+  .videoCss{
+    width: 100%;
+  }
+</style>

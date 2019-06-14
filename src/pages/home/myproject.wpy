@@ -1,0 +1,295 @@
+<template>
+
+  <view class="container" wx:if="{{init}}">
+    <view @tap="enter">
+      <!-- 头图区域 -->
+      <AvatarPanel :info.sync="userInfo"/>
+    </view>
+    <view class="h-gap"/>
+    <!--操作区域-->
+    <view class="operation-box">
+      <view class="operation-row row-around" >
+        <form bindsubmit="myOpt('create')" report-submit='true'>
+          <button plain form-type="submit" >
+            <view class="operation-row column-center">
+              <image src="/images/home/shop.png"/>
+              <text>我的提问</text>
+            </view>
+          </button>
+        </form>            
+        <form bindsubmit="myOpt('trans')" report-submit='true'>
+          <button plain form-type="submit" >
+            <view class="operation-row column-center">
+              <image src="/images/home/cart.png"/>
+              <text>我的翻译</text>
+            </view>
+          </button>
+        </form>            
+        <form bindsubmit="myOpt('answer')" report-submit='true'>
+          <button plain form-type="submit" >
+            <view class="operation-row column-center">
+              <image src="/images/home/order.png"/>
+              <text>我的回答</text>
+            </view>
+          </button>
+        </form>            
+      </view>
+
+      <view class="hr"></view>
+
+      <view class="row-around">
+        <form bindsubmit="pay" report-submit='true'>
+          <button plain form-type="submit" >
+            <view class="operation-row column-center" >
+              <image src="/images/home/coupon.png"/>
+              <text>微信支付</text>
+            </view>
+          </button>
+        </form>            
+        <form bindsubmit="scan" report-submit='true'>
+          <button plain form-type="submit" >
+            <view class="operation-row column-center" >
+              <image src="/images/home/more.png"/>
+              <text>我的预约</text>
+            </view>
+          </button>
+        </form>            
+        <form bindsubmit="scan" report-submit='true'>
+          <button plain form-type="submit" >
+            <view class="operation-row column-center">
+              <image src="/images/home/scan.png"/>
+              <text>扫码核销</text>
+            </view>
+          </button>
+        </form>            
+      </view> 
+
+    </view>
+  </view>
+  <view class="tab-border"/>
+</template>
+
+<script>
+  import wepy from 'wepy';
+  import base from '../../mixins/base';
+  import auth from '../../api/auth';
+  import ask from '../../api/ask';
+//  import exam from '../../api/exam';
+  import Tips from '../../utils/Tips';
+  import Event from '../../utils/Event';
+  import Navigator from '../../components/weui/navigator';
+  import Copyright from '../../components/common/copyright';
+  import AvatarPanel from '../../components/common/avatar_panel';
+
+  export default class MyProject extends wepy.page {
+    data = {
+      init: false,
+      shop: {},
+      userInfo:{},
+      status: {},
+      statusText: '',
+      shopName: '',
+      limit: '',
+      versionText: '',
+      limitUrl: ''
+    };
+
+    async onLoad () {
+      await this.load();
+      Event.listen(Event.USER_LOGIN, this.load.bind(this), this);
+      Event.listen(Event.USER_LOGOUT, this.load.bind(this), this);
+    };
+
+    async load () {
+      try {
+        if (await auth.isLogin()){
+          var ret = await auth.userInfo();
+          this.userInfo=ret.obj;
+          console.info("this.userInfo",this.userInfo);
+          if(this.userInfo!=null){
+            if(this.userInfo.status==3){
+              this.userInfo.realname=this.userInfo.phone;
+            }
+          }else{
+            await auth.removeConfig('login_code');
+            await auth.removeConfig('token');
+            await auth.removeConfig('role_code');
+            await auth.removeConfig('status');
+            this.userInfo={};
+            this.userInfo.status=0;
+            this.userInfo.realname="登录获取更多服务";
+          }
+        }else{
+          await auth.removeConfig('login_code');
+          await auth.removeConfig('token');
+          await auth.removeConfig('role_code');
+          await auth.removeConfig('status');
+          this.userInfo={};
+          this.userInfo.status=0;
+          this.userInfo.realname="登录获取更多服务";          
+        } 
+      } catch (e) {
+        Tips.modal(e.message);
+      } finally {
+        this.loaded();
+      }
+    };
+
+    collect(formId){
+      if(formId !=null && formId != "the formId is a mock one"){
+        ask.collectFormIds(formId);
+      }
+    };
+
+    async uploadFormIds(){
+      try{
+        var openId = auth.getConfig('openId');
+        if (openId == null) {
+
+          openId=await auth.jscode2session();
+          await auth.setConfig('openId', openId);
+        }
+        var formIds = wepy.$instance.globalData.globalFormIds;  // 获取全局推送码
+        if (formIds!=null && formIds.length>0) {
+            formIds = JSON.stringify(formIds);  // 转换成JSON字符串
+            wepy.$instance.globalData.globalFormIds = [];  
+            await ask.uploadFormIds(formIds);
+        }
+      } catch (e) {
+        Tips.error(e.message)
+      } finally {
+        this.loaded();
+      }
+
+    };
+    methods = {
+      async myOpt (mode,e) {
+        this.collect(e.detail.formId);
+        this.uploadFormIds();
+        if(this.userInfo.status==0){
+          this.$root.$navigate('/pages/login/index');
+        }else{
+          var roleCode=auth.getConfig('role_code');
+          console.info('roleCode',roleCode);
+          if(roleCode.indexOf(mode) != -1){
+            this.$navigate('../job/jobList', {mode:mode, phone: this.userInfo.phone});
+          }else{
+            Tips.error('没有权限');
+          }
+          
+        }
+      },
+      async pay (e) {
+        this.collect(e.detail.formId);
+        this.$root.$navigate('/pages/pay/pay');
+      },
+      async student (e) {
+        this.collect(e.detail.formId);
+        if(this.userInfo.status==0){
+          this.$navigate('../login/index');
+        }else{
+          try{  
+            var data = await auth.userPhone(this.userInfo.phone);
+          } catch (e) {
+            Tips.error(e.message);
+          } finally {
+            this.loaded();
+          }
+          console.info("data",data);
+          if(data.success==true){
+            this.$navigate('../student/dept');
+          }else{
+            Tips.modal("需要教师权限");
+          }
+        }
+      },
+
+      async enter (e) {
+        this.collect(e.detail.formId);
+        if(this.userInfo.status==0){
+          this.$navigate('../login/index');
+        }else{
+          this.$navigate('../login/status');
+        }
+      },
+/*
+      async score (e) {
+        this.collect(e.detail.formId);
+        if(this.userInfo.status==0){
+          this.$root.$navigate('/pages/login/index');
+        }else{
+          this.$navigate('../exam/scoreList', {phone: this.userInfo.phone});
+        }
+      },
+
+      async follow (e) {
+        try{
+          this.collect(e.detail.formId);
+          var data = await auth.userFollow();
+          console.info("data",data);
+          if(data.success==true){
+            this.$navigate('../exam/scoreList',{phone: data.obj.phone,soid:data.obj.openid});
+          }else{
+  //          Tips.modal("没有关注的学生");
+            this.$navigate('../login/follow');          
+          }
+        } catch (e) {
+          Tips.error(e.message);
+        } finally {
+          this.loaded();
+        }
+      }
+      */
+    };
+    components = {
+      Copyright: Copyright,
+      Version: Navigator,
+      NavStatus: Navigator,
+      NavNotice: Navigator,
+      NavDelivery: Navigator,
+      NavVip: Navigator,
+      NavDeliver: Navigator,
+      NavReduce: Navigator,
+      NavCategory: Navigator,
+      NavShops: Navigator,
+      NavLogout: Navigator,
+      AvatarPanel: AvatarPanel,
+      NavManusl: Navigator,
+      NavComment:Navigator
+    };
+    config = {
+      navigationBarTitleText: '我的信息'
+    };
+    mixins = [base];
+  }
+</script>
+
+<style lang="scss">
+  @import "../../styles/variable";
+
+  /*操作区域*/
+  .operation-box{
+    background-color: #FFFCFC; 
+    margin-bottom: 20rpx;
+    padding-top:35rpx;
+    padding-bottom: 35rpx;
+    border-bottom: $border;
+
+    image{
+      height: 90rpx;
+      width: 90rpx;
+    }
+
+    .hr{
+      height: 40rpx;
+      width: 100%;
+    }
+
+    .operation-row{
+      text{
+        color: $color-weak;
+        margin-top: 10rpx;
+      }
+    }
+  }
+</style>

@@ -1,0 +1,114 @@
+<template>
+  <view class="container">
+
+      <repeat for="{{page.list}}" key="index" index="index" item="item">
+        <view class="news-item" @tap="toArticlesInfo({{item.id}},{{item.imageHref}})">
+        <view class="news-item-left"><text class="xxl">{{item.title}}</text></view>
+        <view class="news-item-right"><image class="news-image" src="{{domain + item.imageHref}}"></image></view>
+        </view>
+      </repeat>
+
+  </view>
+
+</template>
+
+
+<script>
+  import wepy from 'wepy';
+//  import api from '../../api/api';
+  import ask from '../../api/ask';
+  import base from '../../mixins/base';
+  import Event from '../../utils/Event';
+  import pagination from '../../mixins/pagination';
+  import Tips from '../../utils/Tips';
+
+  export default class ArticleList extends wepy.page {
+    def = {
+      columnId: '',
+      page: {
+        list: []
+      },
+      //总页数
+      totalPage: 1,
+      //当前页
+      pageNumber: 1,
+      domain: ''
+    };
+    data = {...this.def};
+    async onLoad (options) {
+      try {
+        this.columnId = options.columnId;
+        wx.setNavigationBarTitle({
+          title: options.columnName
+        })
+
+        this.domain = wepy.$instance.globalData.baseUrl2+'/upload/img/cms/';
+        this.page = ask.articleList(this.columnId);
+        console.info("this.page",this.page);
+        await this.next();
+      } catch (e) {
+        Tips.error(e.message);
+      } finally {
+        this.loaded();
+      }
+    };
+
+    methods = {
+      toArticlesInfo(articleId) {
+        wx.navigateTo({
+          url: 'article?articleId=' + articleId
+        });
+      }
+    };
+    components = {
+    };
+    config = {
+      "navigationBarTitleText": '栏目信息',
+      "backgroundTextStyle": 'light',
+      "navigationBarBackgroundColor": '#fff',
+      "navigationBarTextStyle": 'black'
+    };
+    mixins = [base, pagination];
+  }
+</script>
+
+<style lang="less">
+  .news-item-container {
+    background-color: #f2f2f2;
+    width: 100%;
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+
+  .news-item {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    padding-left: 8px;
+    padding-top: 8px;
+    padding-right: 8px;
+    padding-bottom: 8px;
+    margin-left: 8px;
+    margin-right: 8px;
+    margin-top: 8px;
+    background-color: #fff;
+    border: 1px solid #eaeaea;
+    border-bottom: 1px solid #d0d0d0;
+    border-radius: 5px;
+  }
+
+  .news-item-right {
+    width: 60px;
+    height: 60px;
+  }
+
+  .news-image {
+    width: 60px;
+    height: 60px;
+  }
+
+  .news-item-title {
+    font-size: 12pt;
+  }
+
+</style>

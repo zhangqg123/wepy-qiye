@@ -1,0 +1,204 @@
+<template>
+  <Tips />
+  <view class="page" wx:if="{{init}}">
+
+    <!--身份证验证-->
+    <view wx:if="{{status==3}}">
+      <form @submit="idCardLogin">
+        <view class="page__bd form">
+          <view class="weui-cells weui-cells_after-title">
+            <view class="weui-cell weui-cell_input weui-cell_vcode">
+              <view class="weui-cell__hd">
+                <view class="weui-label">姓名</view>
+              </view>
+              <view class="weui-cell__bd">
+                <input class="weui-input" name="realname" placeholder="请输入姓名"/>
+              </view>
+            </view>
+            <view class="weui-cell weui-cell_input weui-cell_vcode">
+              <view class="weui-cell__hd">
+                <view class="weui-label">身份证号</view>
+              </view>
+              <view class="weui-cell__bd">
+                <input class="weui-input" name="idcard" maxlength="18" placeholder="请输入身份证号"/>
+              </view>
+            </view>
+          </view>
+
+          <view class="weui-btn-area">
+            <button class="weui-btn" type="primary" form-type="submit">下一步</button>
+          </view>
+        </view>
+      </form>
+    </view>  
+
+  </view>
+
+  <Copyright buttom="true" />
+
+</template>
+<script>
+  import wepy from 'wepy';
+  import auth from '../../api/auth';
+  import base from '../../mixins/base';
+  import input from '../../mixins/input';
+  import FormTips from '../../components/weui/tips';
+  import VCode from '../../components/weui/vcode';
+  import Tips from '../../utils/Tips';
+  import Event from '../../utils/Event';
+  import WxUtils from '../../utils/WxUtils';
+  import Copyright from '../../components/common/copyright';
+  export default class idCardAuth extends wepy.page {
+    def = {
+      init: false,
+      loginCode:null,
+      status: 0,
+      loginMessage: {}
+    };
+    data = {...this.def};
+    async onLoad () {
+      try {
+        const loginCode = auth.getConfig('login_code');
+        if (loginCode != null) {
+          this.loginCode=loginCode;
+          const attributes = await auth.registerCode();
+          console.info("attributes",attributes);
+          if (attributes.status != null) {
+            this.status=attributes.status;
+            console.info("status:",this.status);
+          }
+        }
+
+      } catch (e) {
+      } finally {
+        this.loaded();
+      }
+    }
+
+    methods = {
+      async idCardLogin({detail}) {
+        // 覆盖对象
+        Object.assign(this.loginMessage, detail.value);
+        if (!this.validateIdCard(this.loginMessage.idcard)) {
+          return;
+        }
+        const loginCode = auth.getConfig('login_code');
+        if (loginCode != null) {
+          this.loginCode=loginCode;
+          try {
+            let retData;
+            try {
+              retData = await auth.idCardLogin(this.loginMessage.realname, this.loginMessage.idcard);
+              console.info("retData",retData);
+              if(retData.success==false){
+                Tips.modal(retData.msg);
+                return;
+              }
+            } catch (err) {
+                this.tips(err.message);
+                return;
+            }
+
+            if(retData.attributes.status){
+              this.status=retData.attributes.status;
+              if(this.status==4){
+                await auth.setConfig('status',retData.attributes.status);
+                this.$switch('/pages/home/myproject');          
+              }
+            }
+            Event.emit(Event.USER_LOGIN);                
+          } catch (e) {
+            this.tips(e.message);
+          } finally {
+            this.loaded();
+          }
+        }else{
+          return;
+        }
+      }
+    };
+    onShareAppMessage () {
+      const title = '浪潮家教';
+      const url = '/pages/home/index';
+      return Tips.share(title, url, title);
+    }
+
+
+   /**
+     * 校验身份证号
+     */
+    validateIdCard(idCard){
+      //15位和18位身份证号码的正则表达式
+      var regIdCard=/^(^[1-9]\d{7}((0\d)|(1[0-2]))(([0|1|2]\d)|3[0-1])\d{3}$)|(^[1-9]\d{5}[1-9]\d{3}((0\d)|(1[0-2]))(([0|1|2]\d)|3[0-1])((\d{4})|\d{3}[Xx])$)$/;
+
+      //如果通过该验证，说明身份证格式正确，但准确性还需计算
+      if(regIdCard.test(idCard)){
+        if(idCard.length==18){
+          var idCardWi=new Array( 7, 9, 10, 5, 8, 4, 2, 1, 6, 3, 7, 9, 10, 5, 8, 4, 2 ); //将前17位加权因子保存在数组里
+          var idCardY=new Array( 1, 0, 10, 9, 8, 7, 6, 5, 4, 3, 2 ); //这是除以11后，可能产生的11位余数、验证码，也保存成数组
+          var idCardWiSum=0; //用来保存前17位各自乖以加权因子后的总和
+          for(var i=0;i<17;i++){
+            idCardWiSum+=idCard.substring(i,i+1)*idCardWi[i];
+          }
+          var idCardMod=idCardWiSum%11;//计算出校验码所在数组的位置
+          var idCardLast=idCard.substring(17);//得到最后一位身份证号码
+          //如果等于2，则说明校验码是10，身份证号码最后一位应该是X
+          if(idCardMod==2){
+            if(idCardLast=="X"||idCardLast=="x"){
+//              console.info("恭喜通过验证啦！");
+            }else{
+              console.info("身份证号码错误！");
+              return false;
+            }
+          }else{
+            //用计算出的验证码与最后一位身份证号码匹配，如果一致，说明通过，否则是无效的身份证号码
+            if(idCardLast==idCardY[idCardMod]){
+//              console.info("恭喜通过验证啦！");
+            }else{
+              console.info("身份证号码错误！");
+              return false;
+            }
+          }
+        }
+      }else{
+        console.info("身份证格式不正确!");
+        return false;
+      }
+      var regRealName=/^[\u4E00-\u9FA5\uf900-\ufa2d·s]{2,20}$/;
+      if(!regRealName.test(this.loginMessage.realname)){
+        this.tips('请输入真实姓名');
+        return false;
+      }
+      console.info('姓名身份证号验证通过');
+      return true;
+    }
+
+    mixins = [input, base];
+    config = {
+      navigationBarTitleText: '政务中心'
+    };
+    components = {
+      Tips: FormTips,
+      VCode: VCode,
+      Copyright: Copyright
+    };
+  }
+</script>
+
+<style lang="scss">
+  @import "../../styles/variable";
+  .brand{
+    padding-top: 60rpx;
+    padding-bottom: 60rpx;
+
+    .logo{
+      width: 100px;
+      height: 100px;
+    }
+
+    text{
+      margin-top: 15rpx;
+      font-size: $text-form;
+    }
+  }
+</style>

@@ -1,0 +1,220 @@
+<template>
+<view class='container-box'>
+  <view class='title' style='padding-top:{{(headerHeight + statusBarHeight)/2 - 12}}px'>
+    <text>手机直播</text>
+  </view>
+  <view class="input-box">
+    <input value="{{roomName}}" maxlength="20" bindinput='bindRoomName' placeholder="请输入直播间名称" placeholder-style="color:#ffffff;opacity: 0.55;"/>
+  </view>
+</view>
+<image class='video' src="../../images/video/{{pureAudio?'video':'video_press'}}.png" bindtap='tapVideo'></image>
+<view class='video-box' hidden='{{pureAudio}}'>
+<image src='../../images/video/tips.png'></image>
+<text>音视频推流</text>
+</view>
+<image class='audio' src="../../images/video/{{pureAudio?'pureAudio_press':'pureaudio'}}.png" bindtap='tapAudio'></image>
+<view class='audio-box'  hidden='{{!pureAudio}}'>
+<image src='../../images/video/tips.png'></image>
+<text>纯音频推流</text>
+</view> 
+<view class='bottom-btn'>
+  <button type="primary" bindtap="create" hover-class="none">开始直播</button>
+</view>
+<cover-image class='close' style="top:{{(headerHeight + statusBarHeight) - 26}}rpx" src="../../images/video/back.png" bindtap="onBack"></cover-image>
+</template>
+<script>
+  import wepy from 'wepy';
+  import liveroom from '../../api/mlvbliveroomcore.js';
+  import getlogininfo from './GenerateAccountInfo.js'
+
+  export default class Roomname extends wepy.page {
+    def = {
+      roomName: '', // 房间名称
+      userName: '', // 用户名称
+      pureAudio: false,
+      tapTime: '',    // 防止两次点击操作间隔太快
+      headerHeight: wepy.$instance.globalData.headerHeight,
+      statusBarHeight: wepy.$instance.globalData.statusBarHeight
+    };
+    data = {...this.def};
+    async onLoad (option) {
+      this.userName = option.userName || ''
+    };
+
+  /**
+   * 用户点击右上角分享
+   */
+  onShareAppMessage () {
+    return {
+      // title: '直播体验室',
+      // path: '/pages/liveroom/roomlist/roomlist',
+      path: '/pages/home/home',
+      imageUrl: 'https://mc.qcloudimg.com/static/img/dacf9205fe088ec2fef6f0b781c92510/share.png'
+    }
+  };
+
+    methods = {
+      // 绑定输入框
+      bindRoomName: function (e) {
+          this.roomName= e.detail.value
+
+      },
+      tapVideo: function() {
+        var self = this;
+        self.setData({
+          pureAudio: false
+        });
+      },
+      tapAudio: function () {
+        var self = this;
+        self.setData({
+          pureAudio: true
+        });
+      },
+      // 进入rtcroom页面
+      create: function () {
+        var self = this;
+        // 防止两次点击操作间隔太快
+        var nowTime = new Date();
+        if (nowTime - this.data.tapTime < 1000) {
+          return;
+        }
+        if (!this.roomName) {
+          this.roomName = "新建直播间";
+        }
+        if (/[<>*{}()^%$#@!~&= ]/.test(self.data.roomName)) {
+          wx.showModal({
+            title: '提示',
+            content: '名称不能为空或包含特殊字符',
+            showCancel: false
+          });
+          return;
+        };
+        var url = './room?type=create&roomName=' + this.roomName + '&userName=' + this.userName + '&pureAudio=' + this.pureAudio;
+        wx.redirectTo({
+          url: url
+        });
+        wx.showToast({
+          title: '进入房间',
+          icon: 'success',
+          duration: 1000
+        })
+        self.setData({ 'tapTime': nowTime });
+      },
+      onBack: function () {
+        wx.navigateBack({
+          delta: 1
+        });
+      }
+
+    };
+
+    mixins = [];
+    config = {
+      navigationBarTitleText: "直播体验室"
+    };
+    components = {
+    };
+  }
+</script>
+
+<style lang="scss">
+  @import "../../styles/variable";
+.container-box {
+  background-image: url(https://mc.qcloudimg.com/static/img/7da57e0050d308e2e1b1e31afbc42929/bg.png);
+  background-color: #333;
+  background-repeat:no-repeat;
+  background-size: cover;
+  height: 100vh;
+}
+.input-box {
+  background-color: transparent;
+  color: #ffffff;
+  padding: 3vw 5vw;
+  border-color: #577785; 
+  border-style: solid; 
+  border-top-width: 0px;
+  border-right-width: 0px; 
+  border-bottom-width: 1px;
+  border-left-width: 0px;
+  padding-top: 20%;
+  margin-left: 30px;
+  margin-right: 30px;
+  text-align: center;
+}
+
+.video {
+  position: absolute;
+  width: 8vw;
+  height: 8vw;
+  left: 32vw;
+  bottom: 30vh;
+}
+
+.video-box {
+  position: absolute;
+  width: 22vw;
+  height: 8vw;
+  left: 25vw;
+  bottom: calc(30vh - 10vw);
+}
+
+.video-box image{
+position: absolute;
+  width: 22vw;
+  height: 60rpx;
+  text-align: center;
+}
+
+.video-box text{
+  position: absolute;
+  width: 22vw;
+  top: 12rpx;
+  color: #fff;
+  font-size: 12px;
+  text-align: center;
+}
+
+.audio {
+  position: absolute;
+  width: 8vw;
+  height: 8vw;
+  left: 60vw;
+  bottom: 30vh;
+}
+
+.audio-box {
+  position: absolute;
+  width: 22vw;
+  height: 8vw;
+  left: 53vw;
+  bottom: calc(30vh - 10vw);
+}
+.audio-box image{
+  position: absolute;
+  width: 22vw;
+  height: 60rpx;
+  text-align: center;
+}
+
+.audio-box text{
+  position: absolute;
+  width: 22vw;
+  top: 12rpx;
+  color: #fff;
+  font-size: 12px;
+  text-align: center;
+}
+
+.bottom-btn {
+  position: fixed;
+  width: 92vw;
+  left: 4vw;
+  bottom: 6vh;
+}
+.bottom-btn button {
+   background-color: #006eff;
+   border-radius: 50px;
+}
+
+</style>

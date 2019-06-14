@@ -1,0 +1,177 @@
+<template>
+ <view class="mainUI"> 
+  <view class='title' style='padding-top:{{(headerHeight + statusBarHeight)/2 - 12}}px'>
+    <text class="primary xxl">龙视播</text>
+  </view>
+  <view class='tips'>
+    <text class="default xl">以下将展示小程序互动音视频能力</text>
+  </view>
+  <view class='guide-box'>
+    <view wx:for="{{entryInfos}}" wx:key="{{index}}" id="{{index}}" class='guide' bindtap='onEntryTap'>
+      <block>
+        <image class="guide_icon" src="{{item.icon}}" mode="aspectFit" />
+        <view class="guide_label">{{item.title}}</view>
+        <view class="guide_desc">{{item.desc}}</view>
+      </block>
+    </view>
+    <!-- <view class='guide-nomore guide-nomore-bk'>
+      <view class="guide_nomore_label">
+        <view>更多功能</view>
+        <view>敬请期待</view> 
+      </view>
+    </view> -->
+    <!-- <view class='guide-nomore'></view> -->
+  </view>
+  <view class='logo-box'>
+    <image class='logo' src='../../images/video/logo.png'></image>
+  </view>
+</view>
+</template>
+<script>
+  import wepy from 'wepy';
+  export default class Mlvbmain extends wepy.page {
+    def = {
+      canShow: 0,
+      tapTime: '',    // 防止两次点击操作间隔太快
+      entryInfos: [
+        { icon: "../../images/video/play.png", title: "手机直播", desc: "<mlvb-live-room>", navigateTo: "./roomlist" },
+        { icon: "../../images/video/push.png", title: "RTMP推流", desc: "<live-pusher>", navigateTo: "../live-pusher-demo/push-config/push-config" },
+        { icon: "../../images/video/play.png", title: "直播播放", desc: "<live-player>", navigateTo: "../live-player-demo/play" },
+        { icon: "../../images/video/rtplay.png", title: "低延时播放", desc: "<live-player>", navigateTo: "../rtc-player-demo/rtplay" }
+
+      ],
+      headerHeight: wepy.$instance.globalData.headerHeight,
+      statusBarHeight: wepy.$instance.globalData.statusBarHeight
+    };
+    data = {...this.def};
+    async onLoad (option) {
+      console.log("onLoad");
+    };
+    onReady () {
+      console.log("onReady");
+      if(!wx.createLivePlayerContext) {
+        setTimeout(function(){
+          wx.showModal({
+            title: '提示',
+            content: '当前微信版本过低，无法使用该功能，请升级到最新微信版本后再试。',
+            showCancel: false
+          });
+        },0);
+      } else {
+        // 版本正确，允许进入
+        this.canShow = 1;
+      }
+    };
+    methods = {
+      onEntryTap: function (e) {
+        if (this.data.canShow) {
+        // if(1) {
+          // 防止两次点击操作间隔太快
+          var nowTime = new Date();
+          if (nowTime - this.data.tapTime < 1000) {
+            return;
+          }
+          var toUrl = this.data.entryInfos[e.currentTarget.id].navigateTo;
+          console.log(toUrl);
+          wx.navigateTo({
+            url: toUrl,
+          });
+          this.setData({ 'tapTime': nowTime });
+        } else {
+          wx.showModal({
+            title: '提示',
+            content: '当前微信版本过低，无法使用该功能，请升级到最新微信版本后再试。',
+            showCancel: false
+          });
+        }
+      },
+    };
+
+    mixins = [];
+    config = {
+      navigationBarTitleText: '龙视'
+    };
+    components = {
+
+    };
+  }
+</script>
+
+<style lang="scss">
+  @import "../../styles/variable";
+.mainUI {
+  position: relative;
+  width: 100vw;
+  height: 100%;
+//  background-image: url(https://mc.qcloudimg.com/static/img/fae52dbeb369a1f6a6b91e80a60485cf/bg.png);
+//  background-color: #fff;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+.title {
+  text-align: center;
+  padding: 10vw 0 5vw;
+}
+.tips {
+  text-align: center;
+  padding: 0 0 5vw;
+}
+.guide-box {
+  text-align: center;
+}
+.guide {
+  display: inline-block;
+  width: 35vw;
+  height: 33vw;
+  background-color: rgba(0, 0, 0, 0.1);
+  text-align: center;
+  margin: 5vw;
+  vertical-align: top;
+}
+.guide-nomore {
+  display: inline-block;
+  width: 35vw;
+  height: 33vw;
+  text-align: center;
+  margin: 1.5px;
+  vertical-align: top;
+}
+.guide-nomore-bk {
+  background-color: rgba(0, 0, 0, 0.3);
+}
+.guide_icon {
+  display: block;
+  width: 72rpx;
+  height: 72rpx;
+  margin: 20px auto 0;
+}
+.guide_label {
+  display: block;
+  margin-top: 10px;
+  color: #262626;
+  font-size: 28rpx;
+}
+.guide_desc {
+  display: block;
+  margin-top: 2px;
+  color: #626E7A;
+  font-size: 28rpx;
+  white-space: nowrap;
+}
+.guide_nomore_label {
+  margin-top: 36px;
+  color: rgba(256, 256, 256, 0.3);
+  font-size: 14px;
+}
+.logo-box {
+  position: absolute;
+  width: 100vw;
+  bottom: 36rpx;
+  text-align: center;
+}
+.logo {
+  width: 160rpx;
+  height: 44rpx;
+}
+
+</style>

@@ -1,0 +1,59 @@
+<template>
+  <Tips />
+  <view class="page" wx:if="{{init}}">
+    <view>
+      <view class="brand column-center">
+     <!--   <image class="logo" src="/images/home/order.png"/> -->
+        <text>登录</text>
+      </view>
+    </view>  
+  </view>
+
+  <Copyright buttom="true" />
+
+</template>
+<script>
+  import wepy from 'wepy';
+  import Copyright from '../../components/common/copyright';
+  export default class Pay extends wepy.page {
+    def = {
+      init: false,
+      id: null,
+      askId:null,
+      management:null,
+      status: 0,
+      redirectUrl:null,
+      loginMessage: {}
+    };
+    data = {...this.def};
+    async onLoad (option) {
+    }
+    methods = {};
+
+    mixins = [];
+    config = {
+      navigationBarTitleText: '龙视'
+    };
+    components = {
+      Copyright: Copyright
+    };
+  }
+</script>
+
+<style lang="scss">
+  @import "../../styles/variable";
+  .brand{
+    padding-top: 60rpx;
+    padding-bottom: 60rpx;
+
+    .logo{
+      width: 100px;
+      height: 100px;
+    }
+
+    text{
+      margin-top: 15rpx;
+      font-size: $text-form;
+    }
+  }
+</style>

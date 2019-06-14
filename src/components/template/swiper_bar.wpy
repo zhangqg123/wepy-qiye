@@ -1,0 +1,43 @@
+<template>
+  <swiper style="height:400rpx" indicator-dots="true" autoplay="true" interval="4000" duration="500" circular="true" >
+    <block wx:for="{{param.adImgs}}" wx:key="index" wx:index="index">
+      <swiper-item>
+      <image mode="aspectFill" src="{{param.adUpload}}{{item.imageHref}}" style="width:100%;height:400rpx"/>
+      </swiper-item>
+    </block>
+  </swiper>
+  <!--TODO 自定义高度处理
+  <swiper indicator-dots="true" indicator-active-color="#EEE" interval="3000" autoplay style="height:{{param.height}}">
+    <swiper-item class="swiper-box" wx:for="{{param.data}}" wx:key="index" wx:index="index" >
+      <image mode="aspectFill" src="{{item.url}}" @tap="routeByAction({{item}})"></image>
+    </swiper-item>
+  </swiper>
+  -->
+</template>
+
+<script>
+  import wepy from 'wepy';
+//  import router from '../../mixins/router';
+  export default class SwiperBar extends wepy.component {
+    props = {
+      param: {}
+    };
+    onLoad() {
+//      console.info("this.param",this.param);
+    }
+
+//    mixins = [router]
+  }
+</script>
+
+<style lang="scss">
+  @import "../../styles/variable";
+  .swiper-box{
+    height: 100%;
+    width: 100%;
+    image{
+      height: 100%;
+      width: 100%;
+    }
+  }
+</style>

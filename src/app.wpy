@@ -1,0 +1,187 @@
+<style lang="scss">
+  @import "./styles/zent";
+  @import "./styles/base";
+  @import "./styles/weui";
+  @import "./styles/weui-extend";
+</style>
+
+<script>
+  import wepy from 'wepy';
+  import 'wepy-async-function';
+  import WxUtils from './utils/WxUtils';
+
+  export default class extends wepy.app {
+    globalData = {
+      auth: {},
+      usertype: "qiye",
+      header: {
+        'Content-Type': 'application/json',
+        'Cookie': ''
+      },
+      globalFormIds: [],
+      appId: 'wx5c51671623808ac0',
+      resCode: '',
+      createBy: '',
+      xcxId: 'wxcf299b6e12f042be',
+      aesKey: "W3ZNF7UMBAn9WFnx",
+      ivKey: "chMQRwqC2xIIXqLV",
+      baseUrl2: 'https://hunchun.zqgzht.com', 
+//      baseUrl2: 'http://192.168.0.199:8080/jeecg',
+      version: 'v1.0.0',
+
+
+      userInfo: null,
+      headerHeight : 0,
+      statusBarHeight : 0      
+    };
+    constructor() {
+      super();
+      // 注册中间件
+      this.use('requestfix');
+      this.use('promisify');
+      this.intercept('request', {
+        config(p) {
+          p.header = this.createAuthHeader();
+          return p;
+        }
+      });
+      this.intercept('uploadFile', {
+        config(p) {
+          p.header = this.createAuthHeader();
+          return p;
+        },
+        success(p) {
+          return p.data;
+        }
+      });
+    }
+    /**
+     * 构造权限头部
+     */
+    createAuthHeader() {
+      const loginCode = wepy.$instance.globalData.auth.login_code;
+      const token = wepy.$instance.globalData.auth.token;
+      const header = {};
+      if (loginCode) {
+        header['login-code'] = loginCode;
+      }
+      if (token) {
+        header['X-AUTH-TOKEN'] = token.value;
+      }
+      return header;
+    }
+
+    onLaunch() {
+//      const sysinfo = wx.getSystemInfoSync();
+//      console.info("sysinfo",sysinfo);
+      // 同步开放平台EXT数据
+      const ext = wepy.getExtConfigSync();
+      console.info('[ext] init ext data', ext);
+      Object.assign(wepy.$instance.globalData, ext);
+      this.syncStoreConfig('login_code');
+      this.syncStoreConfig('token');
+      this.syncStoreConfig('role_code');
+      this.syncStoreConfig('status');
+      this.syncStoreConfig('openId');
+
+      const { model, system, statusBarHeight } = wx.getSystemInfoSync();
+      var headHeight;
+      if (/iphone\s{0,}x/i.test(model)) {
+        headHeight = 88;
+      } else if (system.indexOf('Android') !== -1) {
+        headHeight = 68;
+      } else {
+        headHeight = 64;
+      }
+      wepy.$instance.globalData.headerHeight = headHeight;
+      wepy.$instance.globalData.statusBarHeight = statusBarHeight;
+
+    }
+    syncStoreConfig(key) {
+      try {
+        const value = wepy.getStorageSync(key);
+        if (value !== '') {
+          console.info(`[auth]${key} sync success `+value);
+          wepy.$instance.globalData.auth[key] = value;
+        }
+      } catch (e) {
+        console.warn(`[auth]${key} sync fail `);
+      }
+    }
+/*
+    syncStoreConfig(obj, key) {
+      const value = wepy.getStorageSync(obj[key]);
+      if (value !== '') {
+        wepy.$instance.globalData.auth[key] = value;
+      }
+    }
+*/
+    config = {
+      pages: [
+        'pages/home/home',
+        'pages/home/myproject',
+        'pages/home/columnList',
+        'pages/ask/askList',
+        'pages/ask/askEdit',
+        'pages/cms/article',
+        'pages/cms/articleList',
+        'pages/job/jobList',
+        'pages/login/realAuth',
+        'pages/login/idCardAuth',
+        'pages/login/index',
+        'pages/login/register',
+        'pages/login/status',
+        'pages/pay/pay',
+        'pages/mlvb-live/roomlist',
+        'pages/mlvb-live/roomname',
+        'pages/mlvb-live/mlvbmain',
+        'pages/mlvb-live/room',
+      ],
+      "permission": {
+        "scope.userLocation": {
+          "desc": "你的位置信息将用于小程序位置接口的效果展示"
+        }
+      },
+      "networkTimeout": {
+         "request": 60000
+      },
+      window: {
+        backgroundTextStyle: 'dark',
+        backgroundColor: '#F5F5F5',
+        navigationBarBackgroundColor: '#1296db'
+      },
+      tabBar: {
+        color: '#666666',
+        selectedColor: '#1296db',
+        borderStyle: 'white',
+        backgroundColor: '#FAFAFA',
+        list: [
+          {
+            iconPath: 'images/tab/manage.png',
+            selectedIconPath: 'images/tab/manage-active.png',
+            pagePath: 'pages/home/home',
+            text: '首页'
+          },
+          {
+            iconPath: 'images/tab/order.png',
+            selectedIconPath: 'images/tab/order-active.png',
+            pagePath: 'pages/home/columnList',
+            text: '互动'
+          },
+          {
+            iconPath: 'images/tab/order.png',
+            selectedIconPath: 'images/tab/order-active.png',
+            pagePath: 'pages/mlvb-live/mlvbmain',
+            text: '直播'
+          },
+          {
+            iconPath: 'images/tab/user.png',
+            selectedIconPath: 'images/tab/user-active.png',
+            pagePath: 'pages/home/myproject',
+            text: '我的'
+          }
+        ]
+      }
+    };
+  }
+</script>

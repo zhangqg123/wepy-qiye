@@ -1,0 +1,214 @@
+<template lang="wxml">
+  <import src="../../wxParse/wxParse.wxml"/>
+<!--  <view class="art-header" style="display:display">
+    <image class="art-img" src="{{imageHref}}"></image>
+    <view class="art-title">{{detail.title}}</view> 
+  </view> -->
+  <view class="ml20 mr20 mt20 mb20">
+    <text class="xxxl primary mr20">标题</text>
+    <text class="xxxl default ml20">{{detail.title}}</text></view> 
+  <view class="ml20 mr20 mt20 mb20" >
+    <text class="xxl primary mr20">摘要</text>
+    <text class="xxl default ml20"  >{{detail.summary}}</text>
+  </view>
+  <view class="ml20 mr20 mb20">
+    <template is="wxParse" data="{{wxParseData:article.nodes}}"/>
+  </view>
+<!--  <view class="ml20 mt20 mr20">
+    <form bindsubmit="wxPay" report-submit='true'>
+      <button form-type="submit" class="weui-btn" type="primary"  >打赏</button>
+    </form> 
+  </view> -->
+  <view >
+    <ActionBar @optAsk.user="wxPay" @back.user="back" create="打赏"  cancelText="返回" noCancel="0"  /> 
+  </view>
+</template>
+
+
+<script>
+  import wepy from 'wepy';
+//  import api from '../../api/api';
+  import ActionBar from '../../components/common/action_bar';
+  import ask from '../../api/ask';
+//  import exam from '../../api/exam';
+  import base from '../../mixins/base';
+  import Tips from '../../utils/Tips';
+  import WxParse from '../../wxParse/wxParse.js';
+
+  export default class Article extends wepy.page {
+
+    def = {
+      isShow:'',
+      articlesId: 0,
+      detail: {},
+      imageHref :''
+    };
+    data = {...this.def};
+    async onLoad (options) {
+      try {
+        console.info("options",options);
+        this.articleId = options.articleId;
+        const articlesJson = await ask.queryOneArticles(this.articleId);
+        console.info("articlesJson",articlesJson);
+        if (articlesJson.success == true) {
+          this.detail = articlesJson.obj;
+
+          wx.setNavigationBarTitle({
+            title: this.detail.title  //页面标题为动态参数
+          })
+          this.imageHref = wepy.$instance.globalData.baseUrl2+'/upload/img/cms/' + this.detail.imageHref;
+          console.info("detail",this.detail);
+          WxParse.wxParse('article', 'html', this.detail.content, this,5);
+        } else {
+          Tips.error(articlesJson.msg);
+        }
+      } catch (e) {
+        Tips.error(e.message);
+      } finally {
+        this.loaded();
+      }
+    };
+
+
+    wxParseImgLoad(e) {
+    };
+
+    methods = {
+      async wxPay (e) {
+        var code = '' ;    //传给服务器以获得openId
+        var timestamp = ''  ; //时间戳
+        var nonceStr =  '' ;  //随机字符串，后台返回
+        var prepayId = '' ;   //预支付id，后台返回
+        var paySign = '' ;    //加密字符串
+        var package2 = '';
+        var signType = '';
+        //获取用户登录状态
+        wx.login({
+            success: function(res) {
+              if (res.code) { 
+                code = res.code     
+                //发起网络请求,发起的是HTTPS请求，向服务端请求预支付
+                wx.request({
+                  url: 'https://hunchun.zqgzht.com/work/wxpay/prepay.do',
+                  data: {
+                    code: res.code
+                  },
+                  success: function(res) {
+                    
+                    if(res.data.result == true){
+                      
+                      nonceStr = res.data.nonceStr;
+                      prepayId = res.data.prepayId;
+                      package2=res.data.package;
+                      paySign=res.data.paySign;
+                      timestamp=res.data.timeStamp;
+                      signType=res.data.signType;
+                      // 发起微信支付
+                      wx.requestPayment({
+                        'timeStamp': timestamp,
+                        'nonceStr': nonceStr,
+                        'package': package2,
+                        'signType': signType,
+                        'paySign': paySign,
+                        'success':function(res){
+                        // 保留当前页面，跳转到应用内某个页面，使用wx.nevigeteBack可以返回原页面
+                        //  wx.navigateTo({
+                        //    url: '../pay/pay'
+                        //  })
+                          Tips.modal('打赏成功');
+                        },
+                        'fail':function(res){
+                          console.log(res.errMsg)
+                        }
+                      })
+                    }else{
+                      console.log('请求失败' + res.data.info)
+                    }
+                  }
+                })
+              } else {
+                console.log('获取用户登录态失败！' + res.errMsg)
+              }
+            }
+        });
+      },
+      back(info) {
+        console.info("info",info);
+        if(info.formId !=null && info.formId != "the formId is a mock one"){
+          ask.collectFormIds(info.formId);
+        }
+        wepy.navigateBack();
+      }   
+
+    };
+    events = {};
+    mixins = [base];
+    config = {
+      "navigationBarTitleText": '',
+      "backgroundTextStyle": 'light',
+      "navigationBarBackgroundColor": '#fff',
+      "navigationBarTextStyle": 'black'
+    };
+    components = {
+      ActionBar: ActionBar,
+    };
+
+  }
+</script>
+
+
+<style lang="less">
+  @import "../../wxParse/wxParse.wxss";
+  .summary {
+    display:block;
+    width:90%;
+    overflow:hidden;
+  }
+  .art-header {
+    position: relative;
+    width: 100%;
+    height: 219px;
+    color: #FFF;
+  }
+
+  .art-img {
+    width: 100%;
+    height: 219px;
+  }
+
+  .art-title {
+/*    position: absolute;
+    bottom: 36px; */
+    left: 8px;
+    font-size: 16px;
+  }
+
+  .art-source {
+    position: absolute;
+    bottom: 8px;
+    font-size: 14px;
+    right: 8px;
+  }
+
+  .art-content {
+    font-size: 14px;
+    color: #616466;
+    padding-left: 16px;
+    padding-right: 16px;
+    padding-top: 10px;
+    background-color: #FFF;
+    line-height: 1.5;
+  }
+
+  .big_images {
+    height: 100%;
+    display: block;
+    margin-bottom: 90rpx;
+    padding-left: 30rpx;
+    padding-right: 30rpx;
+    font-size:32rpx;
+    image {
+      width:100%;
+    }
+  }
+</style>

@@ -1,0 +1,442 @@
+<template>
+  <view>
+    <SwiperBar :param.sync="param" />
+  </view>
+
+  <view>
+
+    <!--操作区域-->
+    <view class="operation-box">
+      <view class="operation-row row-around" >
+        <form bindsubmit="menu({{menu[0]}})" report-submit='true'>
+          <button plain form-type="submit" >
+            <view class="operation-row column-center">
+              <image src="/images/home/zw6.png"/>
+              <text>{{menu[0].name}}</text>
+            </view>
+          </button>
+        </form>            
+        <form bindsubmit="menu({{menu[1]}})" report-submit='true'>
+          <button plain form-type="submit" >
+            <view class="operation-row column-center">
+              <image src="/images/home/zw1.png"/>
+              <text>{{menu[1].name}}</text>
+            </view>
+          </button>
+        </form>            
+        <form bindsubmit="menu({{menu[2]}})" report-submit='true'>
+          <button plain form-type="submit" >
+            <view class="operation-row column-center">
+              <image src="/images/home/zw2.png"/>
+              <text>{{menu[2].name}}</text>
+            </view>
+          </button>
+        </form>            
+<!--          <button plain open-type="contact" bindcontact="handleContact">
+            <view class="operation-row column-center">
+              <image src="/images/home/zw4.png"/>
+              <text>客服消息</text>
+            </view>
+          </button> -->
+          
+     </view>
+      <view class="operation-row row-around" >
+        <form bindsubmit="menu({{menu[3]}})" report-submit='true'>
+          <button plain form-type="submit" >
+            <view class="operation-row column-center">
+              <image src="/images/home/zw3.png"/>
+              <text>{{menu[3].name}}</text>
+            </view>
+          </button>
+        </form>            
+        <form bindsubmit="menu({{menu[4]}})" report-submit='true'>
+          <button plain form-type="submit" >
+            <view class="operation-row column-center">
+              <image src="/images/home/zw4.png"/>
+              <text>{{menu[4].name}}</text>
+            </view>
+          </button>
+        </form>            
+        <form bindsubmit="menu({{menu[5]}})" report-submit='true'>
+          <button plain form-type="submit" >
+            <view class="operation-row column-center">
+              <image src="/images/home/zw5.png"/>
+              <text>{{menu[5].name}}</text>
+            </view>
+          </button>
+        </form>            
+         
+     </view>
+
+    </view>
+  </view>
+  <view class="tab-border" />
+
+  <view style="margin-top:8px;">
+    <repeat for="{{page.list}}" key="index" index="index" item="item">
+      <!--  <view class="news-item" @tap="toArticlesContent({{item.id}})">
+        <view class="news-item-left">
+          <view class="news-item-title"><text class="xl">{{item.title}}</text></view>
+          <view  class="news-item-content"><text>{{item.summary}}</text></view>
+        </view>
+        <view class="news-item-right">
+          <image class="news-image"  src="{{param.adUpload}}{{item.imageHref}}"></image>
+        </view>
+      </view> -->
+      <form bindsubmit="toArticlesContent({{item.id}})" report-submit='true' class="action">
+        <button form-type="submit" class="btn-item">
+          <image class="news-image"  src="{{param.adUpload}}{{item.imageHref}}"></image>
+          <view class="column-around">
+            <text class="btn-item-title ml20 xl">{{item.title}}</text>
+            <text class="btn-item-title ml20 lg">{{item.summary}}</text>
+          </view>
+        </button>
+      </form>
+    </repeat>
+  </view>
+
+</template>
+
+
+<script>
+  import wepy from 'wepy';
+  import ask from '../../api/ask';
+//  import exam from '../../api/exam';
+  import base from '../../mixins/base';
+  import Event from '../../utils/Event';
+  import Tips from '../../utils/Tips';
+  import Cache from '../../utils/Cache';
+  import pagination from '../../mixins/pagination';
+  import SwiperBar from '../../components/template/swiper_bar';
+  let interval = null;
+
+  export default class HomeIndex extends wepy.page {
+    def = {
+      param: {
+        adImgs: {},
+        adUpload: null
+      },
+      url:wepy.$instance.globalData.baseUrl2,
+      page: {
+        list: []
+      },
+      array: [],
+      menu: [],
+
+//      init: false,
+//      show: false,
+      navUrl: '../manusl/user_management?type=home'
+//      limit: {}
+    };
+    data = {...this.def};
+    async onLoad (option) {
+      try {
+//        this.uploadFormIds();
+        const upload = wepy.$instance.globalData.baseUrl2+'/upload/img/cms/';
+        this.param.adUpload = upload;
+//        const adMenu=await ask.queryAllAdImages();
+        const adMenu=await Cache.queryAd();
+        console.info("adMenu",adMenu);
+        const json = await Cache.menuList();
+
+//        for (var i = 0; i < json.length; ++i) {
+//          if(json[i].serialNumber>110 && json[i].serialNumber<115){
+//            adMenu.push(json[i]);
+//          }
+//        }
+        
+        this.param.adImgs=adMenu;
+        this.menu = json;
+        //初始化加载第一个栏目文章信息
+        var columnId = this.menu[0].id;
+//        wepy.$instance.globalData.createBy=this.menu[0].createBy;
+        wx.setNavigationBarTitle({
+          title: this.menu[0].name  //页面标题为动态参数
+        })
+        this.active = columnId;
+//        var menus='';
+//        for(var i = 0; i < this.menu.length; i++){
+//          menus+=this.menu[i].id+",";
+//        }
+//        menus = menus.substring(0, menus.length - 1)
+        this.page = ask.articleList('');
+//        this.page = ask.articleList(columnId);
+        await this.next();
+        console.info("this.page",this.page);
+        Event.listen(Event.USER_LOGOUT, this.clear.bind(this), this);
+      } catch (e) {
+        Tips.modal(e.message);
+      } finally {
+        this.loaded();
+      }
+    };
+/* 
+    async onShow() {
+      try {
+        this.page = exam.articleList("all");
+        await this.next();
+      } catch (e) {
+        Tips.modal(e.message);
+      } finally {
+        this.loaded();
+      }
+    };
+*/
+    collect(formId){
+      if(formId !=null && formId != "the formId is a mock one"){
+        ask.collectFormIds(formId);
+      }
+    };
+    clear() {
+//      this.init = false;
+    };
+    onHide() {
+//      this.show = false;
+//      clearInterval(interval);
+    };
+    onUnload() {
+      // 清理定时器
+//      clearInterval(interval);
+    };
+
+    onShareAppMessage () {
+      const title = '浪潮考试';
+      const url = '/pages/home/index';
+      return Tips.share(title, url, title);
+    }
+    methods = {
+      async menu (menu,e) {
+        this.collect(e.detail.formId);
+        this.$navigate(`../cms/articleList?columnId=${menu.id}&columnName=${menu.name}`); 
+      },
+      handleContact(e) {
+        console.info("e.path:",e.path)
+        console.info("e.query",e.query)
+      },
+      toArticlesContent(articleId,e) {
+        var formId=e.detail.formId;
+        if(formId !=null && formId != "the formId is a mock one"){
+          ask.collectFormIds(formId);
+        }
+        console.info("formId",formId);
+        wx.navigateTo({
+          url: '../cms/article?articleId=' + articleId
+        });
+      },
+      async scan() {
+        try {
+          const data = await wepy.scanCode();
+          Tips.loading('扫描中');
+          console.info(data);
+          const {errMsg, path, result} = data;
+          if (errMsg != 'scanCode:ok') {
+            Tips.alert('扫描失败请重试');
+            return;
+          }
+          // 会员卡的情况
+          const memberUrlPrefix = 'pages/vip/vip_scan';
+          const isMember = path && path.indexOf(memberUrlPrefix) >= 0;
+          if (isMember) {
+            this.$navigate('/' + path);
+            return;
+          }
+          const isCoupon = path == null && result != null && result.indexOf('#') >= 0;
+          if (isCoupon) {
+            this.$navigate(`/pages/coupon/scan?scan=${result}`);
+            return;
+          }
+          Tips.alert('未知二维码');
+        } finally {
+          Tips.loaded();
+        }
+      }
+    };
+    components = {
+      SwiperBar: SwiperBar
+    };
+    config = {
+//      enablePullDownRefresh: true,
+//      navigationBarTitleText: '浪潮培训'
+    };
+    mixins = [base, pagination];
+  }
+</script>
+
+<style lang="scss">
+  @import "../../styles/variable";
+
+  .shop-box {
+    background-color: $color-primary;
+    padding-left: 20rpx;
+    text{color: white;}
+  }
+
+  /*今日区域*/
+  .today-box{
+    background-color: $color-primary;
+    padding: 40rpx 0;
+
+    text{color: white;}
+
+    .today-price-text{
+      font-size: 80rpx;
+      margin-top: 40rpx;
+      margin-bottom: 40rpx;
+    }
+
+    .vr{
+      width:1px;
+      height: 30rpx;
+      background-color: white;
+    }
+
+    .today-kpi-box .column-center{
+      width: 250rpx;
+    }
+  }
+
+  /*统计区域*/
+  .count-box{
+    padding: 20rpx 0;
+    text{font-size: $text-lg}
+    border-bottom: $border;
+
+    .vr{
+      width: 1px;
+      height: 100rpx;
+      background-color: $color-border;
+    }
+
+    .count-value{
+      font-size: $text-xl;
+      margin-bottom: 20rpx;
+    }
+
+    .count-item{
+      width: 250rpx;
+    }
+  }
+
+  /*操作区域*/
+  .operation-box{
+    background-color: #FFFCFC;
+    margin-bottom: 20rpx;
+    padding-top:35rpx;
+    padding-bottom: 35rpx;
+    border-bottom: $border;
+
+    image{
+      height: 90rpx;
+      width: 90rpx;
+    }
+
+    .hr{
+      height: 40rpx;
+      width: 100%;
+    }
+
+    .operation-row{
+      text{
+        color: $color-weak;
+        margin-top: 10rpx;
+      }
+    }
+  }
+
+  .news-item {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    padding-left: 8px;
+    padding-top: 8px;
+    padding-right: 8px;
+    padding-bottom: 8px;
+    margin-left: 8px;
+    margin-right: 8px;
+    margin-top: 8px;
+    background-color: #fff;
+    border: 1px solid #eaeaea;
+    border-bottom: 1px solid #d0d0d0;
+    border-radius: 5px;
+    position: relative;
+  }
+
+  .btn-item {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+    padding-left: 8px;
+    padding-top: 8px;
+    padding-right: 8px;
+    padding-bottom: 8px;
+    margin-left: 8px;
+    margin-right: 8px;
+    margin-top: 8px;
+    background-color: #fff;
+    border: 1px solid #eaeaea;
+    border-bottom: 1px solid #d0d0d0;
+    border-radius: 5px;
+    position: relative;
+  }
+
+  .news-item-right {
+    width: 60px;
+    height: 60px;
+    position: absolute;
+  }
+  .news-item-left {
+    width: 60px;
+    height: 60px;
+    margin-left: 175rpx;
+  }
+  .news-image {
+    width: 60px;
+    height: 60px;
+  }
+
+  .news-item-title {
+    word-break:keep-all;
+    white-space:nowrap;
+    width: 500rpx;
+    height: 60rpx;
+//    font-size:12pt;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+
+  .btn-item-title {
+    word-break:keep-all;
+    white-space:nowrap;
+    width: 500rpx;
+    height: 60rpx;
+    text-align: left;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+
+  .news-item-content {
+    font-size: 11pt;
+    width: 500rpx;
+    height:101rpx;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    mergin-top:-30rpx;
+    color:#a9a9a9;
+    line-height:35rpx;
+  }
+    .action{
+      height: 100%;
+      width: 100%;
+//      text{font-size: $text-xl;}
+    }
+    .but-action{
+      height: 100%;
+      width: 100%;
+      text{font-size: $text-xl;}
+    }
+    .secondary-action{
+      background-color: #FFF;
+      border-top: $border;
+    }
+
+</style>

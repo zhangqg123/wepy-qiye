@@ -1,0 +1,138 @@
+<template>
+  <view class="item-box column" >
+    <view class="goods-box row">
+      <view class="info-box column">
+        <view class="title-box">
+          <text class="xxl">{{ask.askTitle}}</text>
+        </view>
+
+        <view class="count-box row-around bg-white">
+          <view class="count-item">
+            <text class="weak mr20 sm">提问分类</text>
+            <text class="weak ml20 sm">{{ask.categoryName}}</text>
+          </view>
+          <view class="count-item">
+            <text class="weak mr20">提问人</text>
+            <text class="weak ml20">匿名</text>
+          </view>
+        </view>
+
+        <view class="count-box row-around bg-white">
+          <view class="count-item">
+            <text class="weak mr20 sm">提问日期</text>
+            <text class="weak ml20 sm">{{ask.askDate}}</text>
+          </view>
+          <view class="count-item">
+            <text class="weak mr20">状态</text>
+            <text class="weak ml20">{{ask.statusName==null?'':ask.statusName}}</text>
+          </view>
+        </view>
+
+        
+      </view>
+    </view>
+    <view class="row-around ml20 mb10">
+      <form bindsubmit="displayAsk({{ask.id}})" report-submit='true'>
+        <button form-type="submit" class="my-mini-btn mr20" type="primary" >
+          <image class="icon-s" src="/images/icons/zw10.png"/>查看提问
+        </button>
+      </form>            
+      <form bindsubmit="createAsk({{ask.categoryId}})" report-submit='true'>
+        <button form-type="submit" class="my-mini-btn mr20" type="primary" >
+          <image class="icon-s" src="/images/icons/zw8.png"/>我来提问
+        </button>
+      </form>            
+      <form bindsubmit="transAsk({{ask.id}})" report-submit='true'>
+        <button form-type="submit" class="my-mini-btn mr20" type="primary" >
+          <image class="icon-s" src="/images/icons/zw8.png"/>我来翻译
+        </button>
+      </form>            
+      <form bindsubmit="answerAsk({{ask.id}})" report-submit='true'>
+        <button form-type="submit" class="my-mini-btn mr20" type="primary"  >
+          <image class="icon-s" src="/images/icons/zw8.png"/>我来回答
+        </button>
+      </form>            
+    </view>
+  </view>
+</template>
+
+<script>
+  import wepy from 'wepy';
+  import auth from '../../api/auth';
+  export default class AskItem extends wepy.component {
+    props = {
+      ask: {}
+    };
+    data = {};
+    methods = {
+      async displayAsk(askId,e) {
+        var formId=e.detail.formId;
+        this.$emit('optAsk',{askId: askId,formId:formId,mode:"display"});
+      },
+      async createAsk(categoryId,e) {
+        var formId=e.detail.formId;
+        this.$emit('optAsk',{categoryId: categoryId,formId:formId,mode:"create"});
+      },
+      async transAsk(askId,e) {
+        var formId=e.detail.formId;
+        this.$emit('optAsk',{askId: askId,formId:formId,mode:"trans"});
+      },
+      async answerAsk(askId,e) {
+        var formId=e.detail.formId;
+        this.$emit('optAsk', {askId: askId,formId:formId,mode:"answer"});
+      },
+    };
+  }
+</script>
+
+<style lang="scss">
+  @import "../../styles/variable";
+
+  /*统计区域*/
+  .count-box{
+    padding: 10rpx 0;
+    text{font-size: $text-lg};
+/*    border-bottom: $border; */
+
+    .count-item{
+      width: 375rpx;
+    }
+  }  
+  .item-box{
+    background-color: #FFF;
+    position: relative;
+    border-bottom: $border;
+    padding: 10rpx;
+    .item-action{
+      border-top: $border;
+      height: 90rpx;
+    }
+
+    .goods-box{
+      padding-bottom: 10rpx;
+      border-bottom: 1px dashed #dfdfdf;
+      $image-size: 270rpx;
+      border-radius: 8px;
+
+      .goods-image{
+        height: $image-size;
+        width: $image-size;
+        border: $border;
+      }
+
+      .info-box{
+        justify-content: space-between;
+        height: 192rpx;
+        flex: 1;
+        margin-left: 20rpx;
+        .bgcolor{
+          background-color: $color-bg-body;
+        }
+        .title{
+          line-height: 30rpx;
+        }
+      }
+
+    }
+  }
+</style>

@@ -1,0 +1,43 @@
+<template>
+  <view class="main-container">
+    <view class="zan-panel">
+      <view class="zan-btns">
+    <form bindsubmit="optAsk" report-submit='true'>
+      <button form-type="submit" class="zan-btn zan-btn--fill">
+        {{submitText}}
+      </button>
+    </form>
+    <!--    <button class="zan-btn zan-btn--fill" form-type="submit">{{submitText}}</button> -->
+        <button class="zan-btn" @tap="remove" wx:if="{{mode == 'edit'}}">删除</button>
+      </view>
+    </view>
+  </view>
+</template>
+<script>
+  import wepy from 'wepy';
+  export default class ActionPanel extends wepy.component {
+    props = {
+      mode: {},
+      submitText: {
+        default: '保存'
+      }
+    };
+    methods = {
+      optAsk (e) {
+        var formId=e.detail.formId;
+        this.$emit('submit',{formId:formId});
+      },
+      remove () {
+        this.$emit('remove');
+      }
+    };
+  }
+</script>
+<style lang="scss">
+  @import "../../styles/variable";
+  .main-container{
+    background-color: white;
+    min-height: 100rpx;
+    width: 100%;
+  }
+</style>
